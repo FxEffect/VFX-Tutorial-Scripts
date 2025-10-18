@@ -54,7 +54,7 @@
                 <div class="overflow-x-auto">
                     <table>
                         <thead class="text-sm text-gray-700 uppercase">
-                            <tr> <th class="w-1/12 text-center">录视频</th> <th class="w-1/12 text-center">配音</th> <th class="w-2/12">时间轴</th> <th class="w-3/12">画面内容</th> <th class="w-3/12">旁白/对话</th> <th class="w-2/12">备注</th> </tr>
+                            <tr> <th class="w-1/12 text-center">录视频</th> <th class="w-1/12 text-center">配音</th> <th class="w-1/12">时间轴</th> <th class="w-4/12">画面内容</th> <th class="w-3/12">旁白/对话</th> <th class="w-2/12">备注</th> </tr>
                         </thead>
                         <tbody class="text-gray-700">
                             <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td> <td>0:05</td> <td class="editable"><strong>[快节奏混剪]</strong> 视频成品——火焰命中特效在场景中的最终效果，全屏、高清、极具冲击力。从不同角度快速展示2-3次。</td> <td class="editable">(激昂、快节奏的背景音乐)</td> <td class="editable"><strong>目标：</strong> 立即展示最终效果，瞬间抓住观众眼球。</td> </tr>
@@ -83,7 +83,7 @@
                     </h3>
                     <div class="overflow-x-auto border rounded-lg">
                         <table>
-                           <thead class="text-sm text-gray-700 uppercase"><tr> <th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-2/12">时间轴</th><th class="w-3/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
+                           <thead class="text-sm text-gray-700 uppercase"><tr> <th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-1/12">时间轴</th><th class="w-4/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
                             <tbody class="text-gray-700">
                                 <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>0:15</td><td class="editable"><strong>[画面]</strong> 快速展示三张核心贴图：火焰序列图、光晕图、火星图。</td><td class="editable">首先，简单介绍一下这次要用到的三张贴图：火焰序列、一个光晕，还有一张火星贴图。</td><td class="editable"><strong>目标：</strong> 让观众对所需资源有初步了解。</td></tr>
                                 <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>0:30</td><td class="editable"><strong>[操作]</strong> 在内容浏览器空白处右键 -> 创建材质。命名为M_Glow_001。</td><td class="editable">咱们先来创建最基础的辉光材质。在内容浏览器右键，选择Material，命名为M_Glow_001。</td><td class="editable"><strong>[视觉引导]</strong> 鼠标高亮“Material”选项。</td></tr>
@@ -103,7 +103,7 @@
                     </h3>
                     <div class="overflow-x-auto border rounded-lg">
                          <table>
-                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-2/12">时间轴</th><th class="w-3/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
+                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-1/12">时间轴</th><th class="w-4/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
                             <tbody class="text-gray-700">
                                 <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>2:30</td><td class="editable"><strong>[操作]</strong> 创建新的空发射器NE_Fire_001，设置循环模式为Once，并添加Spawn Burst Instantaneous模块，数量为15。</td><td class="editable">第二章，我们来制作特效的“主角”——核心火焰。创建一个空的发射器NE_Fire_001。命中特效是瞬间触发的，所以循环模式设为Once（单次），然后添加“瞬间爆发”模块，数量给15。</td><td class="editable"><strong>优化点：</strong> 再次强调单次触发的核心逻辑。</td></tr>
                                 <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>3:00</td><td class="editable"><strong>[操作]</strong> 在Particle Spawn中添加Add Velocity模块，模式改为From Point，速度设为20-60的随机范围。</td><td class="editable">关键一步，让火焰有炸开的感觉。在粒子生成时添加Add Velocity（添加速度），模式改成From Point（从点发射），速度给一个20到60的随机范围。</td><td class="editable"><strong>优化点：</strong> 解释From Point模式的作用是制造爆炸感。</td></tr>
@@ -125,7 +125,7 @@
                     </h3>
                      <div class="overflow-x-auto border rounded-lg">
                         <table>
-                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-2/12">时间轴</th><th class="w-3/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
+                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-1/12">时间轴</th><th class="w-4/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
                             <tbody class="text-gray-700">
                                  <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>5:30</td><td class="editable"><strong>[操作]</strong> 创建空发射器NE_Glow_001，设置单次爆发1个粒子，生命周期0.3秒，大小200。</td><td class="editable">第三章，我们来给主角添加“光环”和“随从”。先做光晕，创建NE_Glow_001，单次爆发1个粒子，生命周期0.3秒，大小200。</td><td class="editable"><strong>[加速播放]</strong> 对于类似的创建步骤，可以适当加速。</td></tr>
                                 <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>6:00</td><td class="editable"><strong>[操作]</strong> 为NE_Glow_001指定M_Glow_001材质，并用Scale Color的Alpha曲线添加入淡出动画。</td><td class="editable">为它指定我们最早创建的M_Glow_001材质，然后用Scale Color的Alpha曲线给它一个闪现的动画。</td><td class="editable"><strong>[视觉引导]</strong> 镜头推近，清晰展示曲线编辑器的操作。</td></tr>
@@ -144,7 +144,7 @@
                     </h3>
                      <div class="overflow-x-auto border rounded-lg">
                         <table>
-                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-2/12">时间轴</th><th class="w-3/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
+                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-1/12">时间轴</th><th class="w-4/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
                             <tbody class="text-gray-700">
                                  <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>8:00</td><td class="editable"><strong>[操作]</strong> 在内容浏览器右键 -> FX -> Niagara System，选择NE_Fire_001作为基础创建系统，命名为NS_FireHit_001。</td><td class="editable">最后一步，整合。我们创建一个Niagara System（系统），选择最重要的火焰发射器NE_Fire_001作为基础。</td><td class="editable"></td></tr>
                                 <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>8:30</td><td class="editable"><strong>[操作]</strong> 在系统编辑器的时间轴上，点击加号，将NE_Glow_001和NE_Sparks_001发射器添加进来。</td><td class="editable">打开系统，在时间轴上，把我们做好的光晕和火星发射器都添加进来。</td><td class="editable"><strong>[视觉引导]</strong> 高亮时间轴和添加发射器的按钮。</td></tr>
@@ -169,7 +169,7 @@
                  <div class="overflow-x-auto">
                     <table>
                         <thead class="text-sm text-gray-700 uppercase">
-                            <tr> <th class="w-1/12 text-center">录视频</th> <th class="w-1/12 text-center">配音</th> <th class="w-2/12">时间轴</th> <th class="w-3/12">画面内容</th> <th class="w-3/12">旁白/对话</th> <th class="w-2/12">备注</th> </tr>
+                            <tr> <th class="w-1/12 text-center">录视频</th> <th class="w-1/12 text-center">配音</th> <th class="w-1/12">时间轴</th> <th class="w-4/12">画面内容</th> <th class="w-3/12">旁白/对话</th> <th class="w-2/12">备注</th> </tr>
                         </thead>
                         <tbody class="text-gray-700">
                             <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>9:15</td><td class="editable"><strong>[画面]</strong> 将最终完成的NS_FireHit_001拖入场景中，全屏、慢放展示最终效果。屏幕上用关键词列出本节重点：1. 参数化材质 2. 模块化搭建 3. 速度与解算 4. SubUV动画</td><td class="editable">现在，你已经掌握了通过组合发射器来制作一个完整命中特效的核心流程。</td><td class="editable"><strong>优化点：</strong> 强化观众的获得感。</td></tr>
