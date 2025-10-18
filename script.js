@@ -18,6 +18,9 @@
             const storageKeyContent = 'fireEffectEditableContentV3'; // Key for editable content
             const allTaskCheckboxes = document.querySelectorAll('.task-checkbox');
             const resetButton = document.getElementById('reset-button');
+            const importButton = document.getElementById('import-button');
+            const importFileInput = document.getElementById('import-file-input');
+            const exportButton = document.getElementById('export-button');
             const allGroupContainers = document.querySelectorAll('[data-group-container]');
             
             // --- FUNCTIONS ---
@@ -240,6 +243,140 @@
                 }
             }
 
+            function handleMarkdownImport(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    try {
+                        parseAndApplyMarkdown(content);
+                        
+                        // After successful import, save and refresh the entire UI
+                        saveEditableContent();
+                        saveProgress();
+                        updateAllGroupTitleStates();
+                        updateProgress();
+                        applyAllFormatting(document.querySelectorAll('.editable'));
+
+                        alert('导入成功！页面已更新。');
+                    } catch (error) {
+                        console.error('导入Markdown文件失败:', error);
+                        alert('导入失败，文件格式可能不正确。请查看控制台获取详细信息。');
+                    }
+                };
+                reader.readAsText(file, 'UTF-8');
+            }
+
+            function parseAndApplyMarkdown(markdownContent) {
+                const lines = markdownContent.split('\n');
+                const metadataRegex = /<!-- id:(.*?) video:(checked|unchecked) audio:(checked|unchecked) -->/;
+
+                lines.forEach(line => {
+                    if (!line.startsWith('|') || !line.includes('<!--')) return;
+
+                    const match = line.match(metadataRegex);
+                    if (!match) return;
+
+                    const [, id, videoStatus, audioStatus] = match;
+                    if (!id) return;
+
+                    const firstCell = document.querySelector(`[data-editable-id="${id.trim()}"]`);
+                    if (!firstCell) return;
+
+                    const row = firstCell.closest('tr.task-row');
+                    if (!row) return;
+
+                    // 1. Update checkboxes
+                    row.querySelector('.task-checkbox[data-task-type="video"]').checked = (videoStatus === 'checked');
+                    row.querySelector('.task-checkbox[data-task-type="audio"]').checked = (audioStatus === 'checked');
+
+                    // 2. Update editable content
+                    const cellsContent = line.split('|').slice(4, -1).map(c => c.trim());
+                    const editableCells = row.querySelectorAll('td.editable');
+                    
+                    let contentWithMetadata = cellsContent[0].replace(metadataRegex, '').trim();
+                    cellsContent[0] = contentWithMetadata;
+
+                    editableCells.forEach((cell, index) => {
+                        cell.innerHTML = markdownToHtml(cellsContent[index].replace(/<br>/g, '\n'));
+                    });
+                });
+            }
+
+            function exportToMarkdown() {
+                let markdownString = '';
+
+                // 1. Build YAML Front Matter
+                const videoProgress = document.getElementById('progress-text-video').textContent;
+                const audioProgress = document.getElementById('progress-text-audio').textContent;
+                const exportDate = new Date().toISOString();
+
+                markdownString += `---\n`;
+                markdownString += `version: "1.0"\n`;
+                markdownString += `exportDate: "${exportDate}"\n`;
+                markdownString += `videoProgress: "${videoProgress}"\n`;
+                markdownString += `audioProgress: "${audioProgress}"\n`;
+                markdownString += `---\n\n`;
+
+                // 2. Add main title
+                const mainTitle = document.querySelector('h1').textContent;
+                markdownString += `# ${mainTitle}\n\n`;
+
+                // 3. Iterate through each main card/section
+                document.querySelectorAll('div.card[data-group-container]').forEach(card => {
+                    const cardHeader = card.querySelector('.card-header');
+                    const sectionTitle = cardHeader.querySelector('h2').textContent.replace(' ✓', '').trim();
+                    markdownString += `## ${sectionTitle}\n\n`;
+
+                    // Handle tables directly under the card
+                    const directTable = card.querySelector(':scope > .collapsible-content > .overflow-x-auto > table');
+                    if (directTable) {
+                        markdownString += processTableToMarkdown(directTable);
+                    }
+
+                    // Handle sub-chapters (like in "The Core")
+                    card.querySelectorAll(':scope > .collapsible-content > div[data-group-container]').forEach(subChapter => {
+                        const subChapterTitle = subChapter.querySelector('h3').textContent.replace(' ✓', '').trim();
+                        markdownString += `### ${subChapterTitle}\n\n`;
+                        const subChapterTable = subChapter.querySelector('table');
+                        if (subChapterTable) {
+                            markdownString += processTableToMarkdown(subChapterTable);
+                        }
+                    });
+                });
+
+                // 4. Create and trigger download
+                const blob = new Blob([markdownString], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `视频脚本-${mainTitle.slice(0,20)}.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            function processTableToMarkdown(tableElement) {
+                let tableMd = '';
+                const headers = Array.from(tableElement.querySelectorAll('thead th')).map(th => th.textContent);
+                tableMd += `| ${headers.join(' | ')} |\n`;
+                tableMd += `|${headers.map(h => h.includes('录') || h.includes('配') ? ' :---: ' : ' --- ').join('|')}|\n`;
+
+                tableElement.querySelectorAll('tbody tr.task-row').forEach(row => {
+                    const videoCheckbox = row.querySelector('.task-checkbox[data-task-type="video"]');
+                    const audioCheckbox = row.querySelector('.task-checkbox[data-task-type="audio"]');
+                    const firstEditableCell = row.querySelector('.editable');
+                    const id = firstEditableCell ? firstEditableCell.dataset.editableId : '';
+
+                    const videoStatus = videoCheckbox.checked ? 'checked' : 'unchecked';
+                    const audioStatus = audioCheckbox.checked ? 'checked' : 'unchecked';
+                    const metadata = `<!-- id:${id} video:${videoStatus} audio:${audioStatus} -->`;
+
+                    const cellsContent = Array.from(row.querySelectorAll('td')).slice(2).map(td => htmlToMarkdown(td.innerHTML).replace(/\|/g, '\\|').replace(/\n/g, '<br>'));
+                    tableMd += `| ${videoCheckbox.checked ? '✓' : ' '} | ${audioCheckbox.checked ? '✓' : ' '} | ${metadata}${cellsContent.join(' | ')} |\n`;
+                });
+                return tableMd + '\n';
+            }
 
             function makeCellEditable(cell) {
                 if (cell.querySelector('textarea')) return;
@@ -314,6 +451,20 @@
 
 
             resetButton.addEventListener('click', resetProgress);
+
+            importButton.addEventListener('click', () => {
+                importFileInput.click();
+            });
+
+            importFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    handleMarkdownImport(file);
+                }
+                event.target.value = ''; // Allow re-importing the same file
+            });
+            
+            exportButton.addEventListener('click', exportToMarkdown);
 
             document.querySelectorAll('.card-header').forEach(header => {
                 header.addEventListener('click', (e) => {
