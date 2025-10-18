@@ -158,9 +158,9 @@ const app = {
         const checkboxes = taskContainer.querySelectorAll('.task-checkbox');
         if (checkboxes.length === 0) return;
 
-        // Check if all are already checked. If so, do nothing.
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        if (allChecked) return;
+        // Determine the new state: if all are checked, uncheck them. Otherwise, check them all.
+        const allCurrentlyChecked = Array.from(checkboxes).every(cb => cb.checked);
+        const shouldBeChecked = !allCurrentlyChecked;
 
         const script = allScripts[activeScriptId];
 
@@ -170,11 +170,10 @@ const app = {
             const taskId = row.dataset.taskId;
             const task = findTaskById(script, taskId);
             if (task) {
-                task.video = true;
-                task.audio = true;
+                task.video = shouldBeChecked;
+                task.audio = shouldBeChecked;
             }
-            // Also update the UI directly for immediate feedback
-            row.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = true);
+            row.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = shouldBeChecked);
         });
 
         // Update progress and save

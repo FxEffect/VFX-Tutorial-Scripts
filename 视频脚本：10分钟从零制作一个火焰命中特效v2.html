@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频脚本：10分钟从零制作一个火焰命中特效v2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .task-row.completed td {
+            text-decoration: line-through;
+            color: #9ca3af; /* Gray-400 */
+        }
+        .task-row.completed {
+            background-color: #f9fafb; /* Gray-50 */
+        }
+        .task-checkbox {
+            cursor: pointer;
+            width: 1.5rem;
+            height: 1.5rem;
+            accent-color: #3b82f6; /* Blue-500 */
+            flex-shrink: 0;
+        }
+        .task-checkbox[data-task-type="audio"] {
+            accent-color: #16a34a; /* Green-600 */
+        }
+        th {
+            background-color: #f9fafb; /* Gray-50 */
+        }
+        /* Custom styles */
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .group-title {
+            cursor: pointer;
+            transition: color 0.2s;
+            display: inline-block;
+        }
+        .group-title .checkmark {
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: #16a34a; /* Green-600 */
+            margin-left: 0.5rem;
+        }
+        .group-title.group-completed {
+            color: #15803d; /* Green-700 */
+        }
+        .group-title.group-completed .checkmark {
+            opacity: 1;
+        }
+
+        .card-header:hover {
+            background-color: #f9fafb;
+        }
+        .card-header h2 { font-size: 1.5rem; font-weight: 700; }
+        .card-header h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; }
+        .card-header p { color: #6b7280; margin-top: 0.25rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+        }
+        td.editable { cursor: cell; }
+        td.editable textarea {
+            width: 100%;
+            height: auto;
+            min-height: 80px;
+            border: 1px solid #3b82f6;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        .collapsible-content {
+            transition: max-height 0.5s ease-in-out;
+            overflow: hidden;
+        }
+        .chevron.rotate-180 {
+             transform: rotate(180deg);
+        }
+        /* Keyword Tag Styles */
+        .tag {
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+        .tag-huamian { background-color: #dbeafe; color: #1e40af; } /* Blue */
+        .tag-caozuo { background-color: #dcfce7; color: #166534; } /* Green */
+        .tag-jiangjie { background-color: #ffedd5; color: #9a3412; } /* Orange */
+        .tag-shijue { background-color: #f3e8ff; color: #6b21a8; } /* Purple */
+        .tag-default { background-color: #e5e7eb; color: #4b5563; } /* Gray */
+
+        /* Speech Phrase Styles */
+        .tts-phrase {
+            color: #2563eb; /* Blue-600 */
+            cursor: pointer;
+            border-bottom: 1px dotted #93c5fd; /* Blue-300 */
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .tts-phrase:hover {
+            color: #1d4ed8; /* Blue-700 */
+            border-bottom-color: #1d4ed8; /* Blue-700 */
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header Section -->
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">视频脚本：10分钟从零制作一个火焰命中特效v2</h1>
+            <p class="mt-2 text-lg text-gray-600">遵循“完美10分钟教程视频制作蓝图”，为观众提供高密度、无废话、有价值的教学体验。</p>
+            <p class="mt-1 text-md text-gray-500">视频总时长： 约10分钟</p>
+        </div>
+        
+        <!-- Progress Bar Section -->
+        <div class="card p-6 mb-8">
+            <!-- Video Progress -->
+            <div class="flex justify-between items-center mb-2">
+                 <h2 class="text-lg font-semibold text-gray-700">录视频进度</h2>
+                 <span id="progress-text-video" class="font-bold text-blue-600">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+                <div id="progress-bar-video" class="bg-blue-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <!-- Audio Progress -->
+            <div class="flex justify-between items-center mb-2">
+                 <h2 class="text-lg font-semibold text-gray-700">配音进度</h2>
+                 <span id="progress-text-audio" class="font-bold text-green-600">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4">
+                <div id="progress-bar-audio" class="bg-green-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div class="text-right mt-4">
+                <button id="reset-button" class="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors duration-200">重置进度</button>
+            </div>
+        </div>
+
+
+        <!-- Part 1: The Hook -->
+        <div class="card" data-group-container>
+            <div class="card-header flex justify-between items-center">
+                <div class="group-title">
+                    <h2>第一部分：黄金15秒—“结果展示 & 价值承诺” (The Hook) <span class="checkmark">✓</span></h2>
+                    <p>时长：0-15秒</p>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 transform transition-transform chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+            </div>
+            <div class="collapsible-content">
+                <div class="overflow-x-auto">
+                    <table>
+                        <thead class="text-sm text-gray-700 uppercase">
+                            <tr> <th class="w-1/12 text-center">录视频</th> <th class="w-1/12 text-center">配音</th> <th class="w-2/12">时间轴</th> <th class="w-3/12">画面内容</th> <th class="w-3/12">旁白/对话</th> <th class="w-2/12">备注</th> </tr>
+                        </thead>
+                        <tbody class="text-gray-700">
+                            <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td> <td>0:05</td> <td class="editable"><strong>[快节奏混剪]</strong> 视频成品——火焰命中特效在场景中的最终效果，全屏、高清、极具冲击力。从不同角度快速展示2-3次。</td> <td class="editable">(激昂、快节奏的背景音乐)</td> <td class="editable"><strong>目标：</strong> 立即展示最终效果，瞬间抓住观众眼球。</td> </tr>
+                            <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td> <td>0:15</td> <td class="editable"><strong>[画面淡入]</strong> 简洁的动态个人Logo或名字Title出现：“冯旭 - 游戏特效设计师”。</td> <td class="editable">Hello everyone，我是游戏特效设计师冯旭。今天，咱们用10分钟，从零开始制作一个超酷的火焰命中特效。我们现在就正式开始。</td> <td class="editable"><strong>优化点：</strong> 按照蓝图建议，用精炼的语言完成品牌植入和价值承诺，自信、专业。</td> </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part 2: The Core -->
+        <div class="card" data-group-container>
+            <div class="card-header flex justify-between items-center">
+                <div class="group-title">
+                    <h2>第二部分：核心教学—“高密度、无废话” (The Core) <span class="checkmark">✓</span></h2>
+                    <p>时长：15秒 - 9分15秒</p>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 transform transition-transform chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+            </div>
+            <div class="collapsible-content">
+                <!-- Chapter 1 -->
+                <div class="px-6 pb-6 border-b border-gray-200" data-group-container>
+                    <h3 class="text-xl font-semibold mt-4 mb-4 flex items-center group-title">
+                        <span>章节1：搭建基础 - 通用材质 (约2.5分钟)</span>
+                        <span class="checkmark">✓</span>
+                    </h3>
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table>
+                           <thead class="text-sm text-gray-700 uppercase"><tr> <th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-2/12">时间轴</th><th class="w-3/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
+                            <tbody class="text-gray-700">
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>0:15</td><td class="editable"><strong>[画面]</strong> 快速展示三张核心贴图：火焰序列图、光晕图、火星图。</td><td class="editable">首先，简单介绍一下这次要用到的三张贴图：火焰序列、一个光晕，还有一张火星贴图。</td><td class="editable"><strong>目标：</strong> 让观众对所需资源有初步了解。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>0:30</td><td class="editable"><strong>[操作]</strong> 在内容浏览器空白处右键 -> 创建材质。命名为M_Glow_001。</td><td class="editable">咱们先来创建最基础的辉光材质。在内容浏览器右键，选择Material，命名为M_Glow_001。</td><td class="editable"><strong>[视觉引导]</strong> 鼠标高亮“Material”选项。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>0:50</td><td class="editable"><strong>[操作]</strong> 双击打开材质编辑器。在左侧细节面板中，将混合模式改为Additive，着色模型改为Unlit，并勾选“双面”。</td><td class="editable">打开材质。第一步，在细节面板里，把混合模式改为Additive（叠加）。<strong>因为它能模拟光照的叠加效果，非常适合做辉光。</strong> 然后把着色模型改为Unlit（无光照），并勾选双面，保证粒子在任何角度都可见。</td><td class="editable"><strong>优化点：</strong> 解释“Why”。点明修改参数的原因，建立专业性。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>1:20</td><td class="editable"><strong>[操作]</strong> 将光晕贴图拖入，连接节点，并添加Particle Color和可控参数Intensity、MainTex。</td><td class="editable">接着，我们把光晕贴图拖进来，连接好基础节点。关键一步，是加入Particle Color节点，并把亮度和贴图都转为参数。<strong>这样做的好处是，之后我们可以直接在材质实例里调整，非常高效。</strong></td><td class="editable"><strong>[加速播放]</strong> 此处可将节点连接的过程略微加速，旁白概括即可。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>2:00</td><td class="editable"><strong>[操作]</strong> 右键M_Glow_001创建材质实例，命名为MI_Fire_001，替换其贴图为火焰序列。再次创建实例MI_Sparks_001并替换为火星贴图。</td><td class="editable">材质主体完成后，我们右键它，创建一个材质实例，命名MI_Fire_001，把贴图换成火焰序列。再来一次，创建MI_Sparks_001，换成火星贴图。好了，所有的材质准备工作，一步到位。</td><td class="editable"><strong>优化点：</strong> 将所有材质相关工作集中处理，逻辑清晰。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>2:25</td><td class="editable"><strong>[操作]</strong> 点击全部保存。</td><td class="editable">全部保存。第一章完成。</td><td class="editable"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Chapter 2 -->
+                <div class="px-6 pb-6 border-b border-gray-200" data-group-container>
+                    <h3 class="text-xl font-semibold mt-6 mb-4 flex items-center group-title">
+                        <span>章节2：主体构建 - 核心火焰 (约3分钟)</span>
+                        <span class="checkmark">✓</span>
+                    </h3>
+                    <div class="overflow-x-auto border rounded-lg">
+                         <table>
+                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-2/12">时间轴</th><th class="w-3/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
+                            <tbody class="text-gray-700">
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>2:30</td><td class="editable"><strong>[操作]</strong> 创建新的空发射器NE_Fire_001，设置循环模式为Once，并添加Spawn Burst Instantaneous模块，数量为15。</td><td class="editable">第二章，我们来制作特效的“主角”——核心火焰。创建一个空的发射器NE_Fire_001。命中特效是瞬间触发的，所以循环模式设为Once（单次），然后添加“瞬间爆发”模块，数量给15。</td><td class="editable"><strong>优化点：</strong> 再次强调单次触发的核心逻辑。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>3:00</td><td class="editable"><strong>[操作]</strong> 在Particle Spawn中添加Add Velocity模块，模式改为From Point，速度设为20-60的随机范围。</td><td class="editable">关键一步，让火焰有炸开的感觉。在粒子生成时添加Add Velocity（添加速度），模式改成From Point（从点发射），速度给一个20到60的随机范围。</td><td class="editable"><strong>优化点：</strong> 解释From Point模式的作用是制造爆炸感。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>3:20</td><td class="editable"><strong>[操作]</strong> 在Particle Update中添加Solve Forces and Velocity模块。</td><td class="editable"><strong>记住，只要你添加了速度，就必须在“粒子更新”里添加一个“速度解算”模块，否则粒子是不会动的。</strong></td><td class="editable"><strong>优化点：</strong> 强调这是一个常见新手易错点，提升教程价值。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>3:40</td><td class="editable"><strong>[操作]</strong> 在Sprite Renderer中，指定材质为MI_Fire_001，并设置SubUV为8x4。</td><td class="editable">在渲染器里，换上我们之前做好的火焰材质实例MI_Fire_001。因为序列图是8x4的，所以在SubUV这里，要正确填上8和4。</td><td class="editable"><strong>[视觉引导]</strong> 高亮SubUV参数区域。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>4:10</td><td class="editable"><strong>[操作]</strong> 在Particle Update中，添加SubUV Animation模块，并根据渲染器读取SubUV参数。</td><td class="editable">贴图是序列图，所以我们还要在“粒子更新”里添加SubUV Animation（序列帧动画）模块，让它播放起来。</td><td class="editable"></td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>4:30</td><td class="editable"><strong>[操作]</strong> 在Initialize Particle中，添加随机旋转，颜色强度设为2。</td><td class="editable">为了让效果更自然，在初始化粒子时，加入随机旋转，避免所有火焰都一个朝向。同时把颜色模式的强度（Value）提高到2，让火焰更亮。</td><td class="editable"></td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>4:50</td><td class="editable"><strong>[操作]</strong> 添加Scale Color模块，将颜色曲线设置为从黄到红渐变，Alpha曲线设置为淡入淡出。</td><td class="editable">最后，通过Scale Color，我们让火焰在生命周期里，颜色从亮黄过渡到红色，同时透明度也做淡入淡出。这模拟了火焰燃烧和熄灭的过程。</td><td class="editable"><strong>[画面]</strong> 预览中出现动态、颜色变化的火焰爆炸效果。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>5:25</td><td class="editable"><strong>[操作]</strong> 点击保存。</td><td class="editable">很好，主角完成了，点击保存。</td><td class="editable"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Chapter 3 -->
+                <div class="px-6 pb-6 border-b border-gray-200" data-group-container>
+                    <h3 class="text-xl font-semibold mt-6 mb-4 flex items-center group-title">
+                        <span>章节3：细节增强 - 辅助元素 (约2.5分钟)</span>
+                        <span class="checkmark">✓</span>
+                    </h3>
+                     <div class="overflow-x-auto border rounded-lg">
+                        <table>
+                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-2/12">时间轴</th><th class="w-3/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
+                            <tbody class="text-gray-700">
+                                 <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>5:30</td><td class="editable"><strong>[操作]</strong> 创建空发射器NE_Glow_001，设置单次爆发1个粒子，生命周期0.3秒，大小200。</td><td class="editable">第三章，我们来给主角添加“光环”和“随从”。先做光晕，创建NE_Glow_001，单次爆发1个粒子，生命周期0.3秒，大小200。</td><td class="editable"><strong>[加速播放]</strong> 对于类似的创建步骤，可以适当加速。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>6:00</td><td class="editable"><strong>[操作]</strong> 为NE_Glow_001指定M_Glow_001材质，并用Scale Color的Alpha曲线添加入淡出动画。</td><td class="editable">为它指定我们最早创建的M_Glow_001材质，然后用Scale Color的Alpha曲线给它一个闪现的动画。</td><td class="editable"><strong>[视觉引导]</strong> 镜头推近，清晰展示曲线编辑器的操作。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>6:30</td><td class="editable"><strong>[操作]</strong> 创建空发射器NE_Sparks_001，设置单次爆发10个粒子，速度100-400随机。</td><td class="editable">接下来是火星。创建NE_Sparks_001，单次爆发10个粒子，速度给快一点，100到400的随机范围。</td><td class="editable"></td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>7:00</td><td class="editable"><strong>[讲解与操作]</strong> 将Sprite Size Mode改为非等比随机，Alignment设为Velocity Aligned，并指定MI_Sparks_001材质。</td><td class="editable">火星的关键点有两个：第一，把Sprite Size Mode改成非等比随机，得到长短不一的火星；第二，把对齐模式（Alignment）设为Velocity Aligned，让火星的朝向始终与它的飞行方向一致。最后，换上火星的材质实例。</td><td class="editable"><strong>优化点：</strong> 将重复操作中的关键差异点提炼出来，重点讲解。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>7:55</td><td class="editable"><strong>[操作]</strong> 点击保存。</td><td class="editable">好了，所有配角都就位了。保存一下。</td><td class="editable"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                 <!-- Chapter 4 -->
+                 <div class="px-6 pb-6" data-group-container>
+                    <h3 class="text-xl font-semibold mt-6 mb-4 flex items-center group-title">
+                        <span>章节4：整合输出 - 系统合成 (约1.5分钟)</span>
+                        <span class="checkmark">✓</span>
+                    </h3>
+                     <div class="overflow-x-auto border rounded-lg">
+                        <table>
+                            <thead class="text-sm text-gray-700 uppercase"><tr><th class="w-1/12 text-center">录视频</th><th class="w-1/12 text-center">配音</th><th class="w-2/12">时间轴</th><th class="w-3/12">画面内容</th><th class="w-3/12">旁白/对话</th><th class="w-2/12">视觉引导/备注</th></tr></thead>
+                            <tbody class="text-gray-700">
+                                 <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>8:00</td><td class="editable"><strong>[操作]</strong> 在内容浏览器右键 -> FX -> Niagara System，选择NE_Fire_001作为基础创建系统，命名为NS_FireHit_001。</td><td class="editable">最后一步，整合。我们创建一个Niagara System（系统），选择最重要的火焰发射器NE_Fire_001作为基础。</td><td class="editable"></td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>8:30</td><td class="editable"><strong>[操作]</strong> 在系统编辑器的时间轴上，点击加号，将NE_Glow_001和NE_Sparks_001发射器添加进来。</td><td class="editable">打开系统，在时间轴上，把我们做好的光晕和火星发射器都添加进来。</td><td class="editable"><strong>[视觉引导]</strong> 高亮时间轴和添加发射器的按钮。</td></tr>
+                                <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>9:00</td><td class="editable"><strong>[画面]</strong> 最终效果在预览窗口中完整播放，集合了光晕、火焰和火星。</td><td class="editable">好了！点击编译保存。我们完整的火焰命中特效就大功告成了！</td><td class="editable"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Part 3: The Landing -->
+        <div class="card" data-group-container>
+            <div class="card-header flex justify-between items-center"> 
+                <div class="group-title">
+                    <h2>第三部分：最后45秒—“价值回顾 & 路径引导” (The Landing) <span class="checkmark">✓</span></h2>
+                    <p>时长：9分15秒 - 10分</p>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 transform transition-transform chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+            </div>
+            <div class="collapsible-content">
+                 <div class="overflow-x-auto">
+                    <table>
+                        <thead class="text-sm text-gray-700 uppercase">
+                            <tr> <th class="w-1/12 text-center">录视频</th> <th class="w-1/12 text-center">配音</th> <th class="w-2/12">时间轴</th> <th class="w-3/12">画面内容</th> <th class="w-3/12">旁白/对话</th> <th class="w-2/12">备注</th> </tr>
+                        </thead>
+                        <tbody class="text-gray-700">
+                            <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>9:15</td><td class="editable"><strong>[画面]</strong> 将最终完成的NS_FireHit_001拖入场景中，全屏、慢放展示最终效果。屏幕上用关键词列出本节重点：1. 参数化材质 2. 模块化搭建 3. 速度与解算 4. SubUV动画</td><td class="editable">现在，你已经掌握了通过组合发射器来制作一个完整命中特效的核心流程。</td><td class="editable"><strong>优化点：</strong> 强化观众的获得感。</td></tr>
+                            <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>9:30</td><td class="editable"><strong>[画面]</strong> 快速闪过更复杂的特效案例片段（如凤凰涅槃、黑洞吞噬等）。</td><td class="editable">今天我们做的只是一个基础的火焰效果。在我的《商业级UE5特效实战大师课》里，我们会基于这些基础技术，去实现更复杂的商业级特效……</td><td class="editable"><strong>优化点：</strong> 搭建通往“大单品”的桥梁，进行价值延伸。</td></tr>
+                            <tr class="task-row"> <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td><td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td><td>9:45</td><td class="editable"><strong>[画面]</strong> 屏幕上出现清晰的文字提示：“想进行系统化学习，可以点击视频简介区的链接，了解我的完整课程。”并用箭头指向简介区方向。</td><td class="editable">好的，以上就是本次视频的全部内容。感谢大家收看，我们下个视频再见！</td><td class="editable"><strong>优化点：</strong> 清晰、自然的行动号召（Call to Action）。</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TEXT TO SPEECH ---
+        function speakWord(word, event) {
+            event.stopPropagation(); // Prevent triggering other events like double-click
+            if ('speechSynthesis' in window) {
+                // Cancel any previous speech to avoid overlap
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(word.trim());
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('抱歉，您的浏览器不支持语音朗读功能。');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- VARIABLES ---
+            const storageKeyProgress = 'fireEffectChecklistProgressV3';
+            const storageKeyContent = 'fireEffectEditableContentV3'; // Key for editable content
+            const allTaskCheckboxes = document.querySelectorAll('.task-checkbox');
+            const resetButton = document.getElementById('reset-button');
+            const allGroupContainers = document.querySelectorAll('[data-group-container]');
+            
+            // --- FUNCTIONS ---
+            function updateProgress() {
+                // Video Progress
+                const videoCheckboxes = document.querySelectorAll('.task-checkbox[data-task-type="video"]');
+                const checkedVideo = document.querySelectorAll('.task-checkbox[data-task-type="video"]:checked').length;
+                const totalVideo = videoCheckboxes.length;
+                const percentageVideo = totalVideo > 0 ? Math.round((checkedVideo / totalVideo) * 100) : 0;
+                document.getElementById('progress-bar-video').style.width = percentageVideo + '%';
+                document.getElementById('progress-text-video').textContent = percentageVideo + '%';
+
+                // Audio Progress
+                const audioCheckboxes = document.querySelectorAll('.task-checkbox[data-task-type="audio"]');
+                const checkedAudio = document.querySelectorAll('.task-checkbox[data-task-type="audio"]:checked').length;
+                const totalAudio = audioCheckboxes.length;
+                const percentageAudio = totalAudio > 0 ? Math.round((checkedAudio / totalAudio) * 100) : 0;
+                document.getElementById('progress-bar-audio').style.width = percentageAudio + '%';
+                document.getElementById('progress-text-audio').textContent = percentageAudio + '%';
+            }
+
+            function saveProgress() {
+                const progress = [];
+                allTaskCheckboxes.forEach((checkbox, index) => {
+                    progress[index] = checkbox.checked;
+                });
+                localStorage.setItem(storageKeyProgress, JSON.stringify(progress));
+            }
+
+            function loadProgress() {
+                const savedProgress = localStorage.getItem(storageKeyProgress);
+                if (savedProgress) {
+                    try {
+                        const progress = JSON.parse(savedProgress);
+                        if (progress.length !== allTaskCheckboxes.length) {
+                           throw new Error("Saved progress length mismatch");
+                        }
+                        allTaskCheckboxes.forEach((checkbox, index) => {
+                            if (progress[index]) {
+                                checkbox.checked = true;
+                            }
+                        });
+                        // Update row completed status after loading
+                        document.querySelectorAll('.task-row').forEach(row => {
+                             const allCheckedInRow = Array.from(row.querySelectorAll('.task-checkbox')).every(c => c.checked);
+                             row.classList.toggle('completed', allCheckedInRow);
+                        });
+
+                    } catch (e) {
+                        console.error("Failed to parse progress from localStorage or length mismatch.", e);
+                        localStorage.removeItem(storageKeyProgress);
+                    }
+                }
+                updateAllGroupTitleStates();
+                updateProgress();
+            }
+            
+            function resetProgress() {
+                localStorage.removeItem(storageKeyProgress);
+                localStorage.removeItem(storageKeyContent); // Clear saved text content
+                window.location.reload(); // Reload the page to restore original state
+            }
+
+            function updateGroupTitleState(groupContainer) {
+                const title = groupContainer.querySelector(':scope > .card-header .group-title, :scope > h3.group-title');
+                const children = groupContainer.querySelectorAll('.task-checkbox');
+                if (!title || children.length === 0) return;
+
+                const allChecked = Array.from(children).every(c => c.checked);
+                title.classList.toggle('group-completed', allChecked);
+            }
+
+            function updateAllGroupTitleStates() {
+                 Array.from(allGroupContainers).reverse().forEach(container => {
+                    updateGroupTitleState(container);
+                });
+            }
+            
+            function applyAllFormatting(cells) {
+                highlightTags(cells);
+                addSpeechPhrases(cells);
+            }
+
+            function highlightTags(cells) {
+                const tagClasses = {
+                    '画面': 'tag-huamian', '操作': 'tag-caozuo', '讲解': 'tag-jiangjie', '讲解与操作': 'tag-jiangjie',
+                    '视觉引导': 'tag-shijue', '快节奏混剪': 'tag-huamian', '画面淡入': 'tag-huamian',
+                    '加速快进': 'tag-caozuo', '加速播放': 'tag-shijue'
+                };
+                cells.forEach(cell => {
+                    if (cell.querySelector('textarea')) return;
+                    let content = cell.innerHTML;
+                    const newContent = content.replace(/\[(.*?)\]/g, (match, tagContent) => {
+                        const key = tagContent.trim();
+                        const tagClass = tagClasses[key] || 'tag-default';
+                        if (match.includes('class="tag"')) return match;
+                        return `<span class="tag ${tagClass}">${match}</span>`;
+                    });
+                    if (content !== newContent) cell.innerHTML = newContent;
+                });
+            }
+
+            function addSpeechPhrases(cells) {
+                // Regex to find English phrases, including those with underscores like M_Add_001
+                const englishPhraseRegex = /\b([A-Za-z0-9_.-]{2,}(?:\s+[A-Za-z0-9_.-]{2,})*)\b/g;
+
+                cells.forEach(cell => {
+                    const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+                    const nodesToProcess = [];
+                    let currentNode;
+                    while (currentNode = walker.nextNode()) {
+                         if (!currentNode.parentElement.closest('.tts-phrase')) {
+                            nodesToProcess.push(currentNode);
+                         }
+                    }
+
+                    nodesToProcess.forEach(node => {
+                        const text = node.textContent;
+                        // Exclude pure numbers from being tagged
+                        if (!englishPhraseRegex.test(text) || /^\d+$/.test(text.trim())) return;
+                        
+                        const fragment = document.createDocumentFragment();
+                        let lastIndex = 0;
+                        text.replace(englishPhraseRegex, (match, phrase, offset) => {
+                            if (offset > lastIndex) {
+                                fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset)));
+                            }
+                            
+                            // Do not tag pure numbers
+                            if (/^\d+$/.test(phrase.trim())) {
+                                fragment.appendChild(document.createTextNode(match));
+                            } else {
+                                const phraseSpan = document.createElement('span');
+                                phraseSpan.className = 'tts-phrase';
+                                phraseSpan.textContent = phrase;
+                                phraseSpan.onclick = (event) => speakWord(phrase, event);
+                                fragment.appendChild(phraseSpan);
+                            }
+                            lastIndex = offset + match.length;
+                        });
+
+                        if (lastIndex < text.length) {
+                            fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+                        }
+                        node.parentNode.replaceChild(fragment, node);
+                    });
+                });
+            }
+            
+            function htmlToMarkdown(html) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                let markdown = '';
+                function traverse(node) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        markdown += node.textContent;
+                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        const tagName = node.tagName.toLowerCase();
+                        if (tagName === 'strong' || tagName === 'b') {
+                            markdown += '**';
+                            Array.from(node.childNodes).forEach(traverse);
+                            markdown += '**';
+                        } else if (tagName === 'br') {
+                            markdown += '\n';
+                        } else {
+                             Array.from(node.childNodes).forEach(traverse);
+                        }
+                    }
+                }
+                Array.from(tempDiv.childNodes).forEach(traverse);
+                return markdown;
+            }
+
+            function markdownToHtml(markdown) {
+                const sanitizer = document.createElement('div');
+                sanitizer.textContent = markdown;
+                let sanitizedText = sanitizer.innerHTML;
+                return sanitizedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            }
+            
+            function assignEditableIds() {
+                document.querySelectorAll('.editable').forEach(cell => {
+                    const table = cell.closest('table');
+                    const row = cell.closest('tr');
+                    if (!table || !row) return;
+
+                    const tableIndex = Array.from(document.querySelectorAll('table')).indexOf(table);
+                    const rowIndex = Array.from(table.querySelectorAll('tr')).indexOf(row);
+                    const cellIndex = Array.from(row.querySelectorAll('td')).indexOf(cell);
+                    
+                    if (tableIndex > -1 && rowIndex > -1 && cellIndex > -1) {
+                        const uniqueId = `editable-${tableIndex}-${rowIndex}-${cellIndex}`;
+                        cell.dataset.editableId = uniqueId;
+                    }
+                });
+            }
+
+            function saveEditableContent() {
+                const contents = {};
+                document.querySelectorAll('[data-editable-id]').forEach(cell => {
+                    contents[cell.dataset.editableId] = cell.innerHTML;
+                });
+                localStorage.setItem(storageKeyContent, JSON.stringify(contents));
+            }
+
+            function loadEditableContent() {
+                const savedData = localStorage.getItem(storageKeyContent);
+                if (!savedData) return;
+                try {
+                    const contents = JSON.parse(savedData);
+                    document.querySelectorAll('[data-editable-id]').forEach(cell => {
+                        const id = cell.dataset.editableId;
+                        if (contents[id]) {
+                            cell.innerHTML = contents[id];
+                        }
+                    });
+                } catch (e) {
+                    console.error("Failed to parse editable content from localStorage", e);
+                    localStorage.removeItem(storageKeyContent);
+                }
+            }
+
+
+            function makeCellEditable(cell) {
+                if (cell.querySelector('textarea')) return;
+
+                const originalHTML = cell.innerHTML;
+                const markdownContent = htmlToMarkdown(originalHTML);
+                
+                cell.innerHTML = '';
+
+                const textarea = document.createElement('textarea');
+                textarea.value = markdownContent.trim();
+                cell.appendChild(textarea);
+                textarea.focus();
+                textarea.style.height = textarea.scrollHeight + 'px';
+
+                const saveEdit = () => {
+                    const newHtml = markdownToHtml(textarea.value);
+                    cell.innerHTML = newHtml;
+                    applyAllFormatting([cell]); // Pass an array with only the edited cell
+                    saveEditableContent(); // Save content after edit
+                };
+
+                const cancelEdit = () => {
+                    cell.innerHTML = originalHTML;
+                };
+
+                textarea.addEventListener('blur', saveEdit);
+                textarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        textarea.blur();
+                    } else if (e.key === 'Escape') {
+                        cancelEdit();
+                    }
+                });
+            }
+
+            // --- EVENT LISTENERS ---
+            allTaskCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const row = cb.closest('.task-row');
+                    if (row) {
+                        const allCheckedInRow = Array.from(row.querySelectorAll('.task-checkbox')).every(c => c.checked);
+                        row.classList.toggle('completed', allCheckedInRow);
+                    }
+                    updateAllGroupTitleStates();
+                    updateProgress();
+                    saveProgress();
+                });
+            });
+            
+            document.querySelectorAll('.group-title').forEach(title => {
+                title.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const groupContainer = title.closest('[data-group-container]');
+                    const childrenCheckboxes = groupContainer.querySelectorAll('.task-checkbox');
+                    const shouldCheck = !Array.from(childrenCheckboxes).every(c => c.checked);
+                    
+                    childrenCheckboxes.forEach(child => {
+                        child.checked = shouldCheck;
+                    });
+                    
+                    groupContainer.querySelectorAll('.task-row').forEach(row => {
+                        row.classList.toggle('completed', shouldCheck);
+                    });
+
+                    updateAllGroupTitleStates();
+                    updateProgress();
+                    saveProgress();
+                });
+            });
+
+
+            resetButton.addEventListener('click', resetProgress);
+
+            document.querySelectorAll('.card-header').forEach(header => {
+                header.addEventListener('click', (e) => {
+                    if (e.target.closest('.group-title')) {
+                        return; // Do nothing if the click was on the title area
+                    }
+                    const content = header.nextElementSibling;
+                    const chevron = header.querySelector('.chevron');
+                    if (content && content.classList.contains('collapsible-content')) {
+                        if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                             content.style.maxHeight = '0px';
+                        } else {
+                            content.style.maxHeight = content.scrollHeight + "px";
+                        }
+                        chevron?.classList.toggle('rotate-180');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.editable').forEach(cell => {
+                cell.addEventListener('dblclick', () => makeCellEditable(cell));
+            });
+
+            // --- INITIALIZATION ---
+            // Set initial expanded state
+            document.querySelectorAll('.collapsible-content').forEach(content => {
+                content.style.maxHeight = content.scrollHeight + "px";
+                const chevron = content.previousElementSibling.querySelector('.chevron');
+                chevron?.classList.add('rotate-180');
+            });
+            
+            assignEditableIds();
+            loadProgress();
+            loadEditableContent();
+            applyAllFormatting(document.querySelectorAll('.editable'));
+        });
+    </script>
+</body>
+</html>
+
+
