@@ -74,16 +74,16 @@ export function renderScriptContent(scriptObject) {
         scriptTablesContainer.appendChild(sectionEl);
     });
 
-    // After rendering, automatically expand the first section for better UX
-    const firstCard = scriptTablesContainer.querySelector('.card');
-    if (firstCard) {
-        const content = firstCard.querySelector('.collapsible-content');
-        const chevron = firstCard.querySelector('.chevron');
+    // After rendering, automatically expand all sections by default.
+    const allCards = scriptTablesContainer.querySelectorAll('.card');
+    allCards.forEach(card => {
+        const content = card.querySelector('.collapsible-content');
+        const chevron = card.querySelector('.chevron');
         if (content && chevron) {
             content.style.maxHeight = content.scrollHeight + 'px';
             chevron.classList.add('rotate-180');
         }
-    }
+    });
 
     // Placeholder for progress calculation
     updateProgress(0, 0); 
@@ -222,9 +222,9 @@ function createTableElement(tasks) {
                 <th class="w-1/12 text-center">录视频</th>
                 <th class="w-1/12 text-center">配音</th>
                 <th class="w-1/12">时间轴</th>
-                <th class="w-4/12">画面内容</th>
-                <th class="w-4/12">旁白/对话</th>
-                <th class="w-2/12">备注</th>
+                <th class="w-3/12">画面内容</th>
+                <th class="w-3/12">旁白/对话</th>
+                <th class="w-4/12">备注</th>
             </tr>
         </thead>
     `;
