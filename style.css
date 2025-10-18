@@ -10,6 +10,9 @@
         .task-row.completed {
             background-color: #f9fafb; /* Gray-50 */
         }
+        .task-row {
+            position: relative;
+        }
         .task-checkbox {
             cursor: pointer;
             width: 1.5rem;
@@ -84,6 +87,9 @@
             transition: max-height 0.5s ease-in-out;
             overflow: hidden;
         }
+        .overflow-x-auto {
+            overflow: hidden;
+        }
         .chevron.rotate-180 {
              transform: rotate(180deg);
         }
@@ -115,15 +121,16 @@
 
         /* Action Buttons for Rows */
         .action-buttons {
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
             display: flex;
             gap: 0.75rem; /* space-x-3 */
             align-items: center;
+            justify-content: center;
         }
 
-        .task-row:hover .action-buttons {
-            opacity: 1;
+        .action-row td {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb; /* Keep the line consistent */
         }
 
         .action-btn {

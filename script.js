@@ -408,8 +408,8 @@
                     const audioStatus = audioCheckbox.checked ? 'checked' : 'unchecked';
                     const metadata = `<!-- id:${id} video:${videoStatus} audio:${audioStatus} -->`;
 
-                    // Slice from 2 to -1 to exclude checkboxes and the action cell
-                    const cellsContent = Array.from(row.querySelectorAll('td')).slice(2, -1).map(td => htmlToMarkdown(td.innerHTML).replace(/\|/g, '\\|').replace(/\n/g, '<br>'));
+                    // Slice from 2 to the end, as there's no action cell anymore
+                    const cellsContent = Array.from(row.querySelectorAll('td')).slice(2).map(td => htmlToMarkdown(td.innerHTML).replace(/\|/g, '\\|').replace(/\n/g, '<br>'));
                     tableMd += `| ${videoCheckbox.checked ? '✓' : ' '} | ${audioCheckbox.checked ? '✓' : ' '} | ${metadata}${cellsContent.join(' | ')} |\n`;
                 });
                 return tableMd + '\n';
@@ -470,10 +470,7 @@
                     <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td>
                     <td>0:00</td>
                     ${Array(numEditableCells).fill('<td class="editable"></td>').join('')}
-                    <td class="text-center"></td>
                 `;
-                // Add action buttons to the last cell
-                newRow.lastElementChild.appendChild(createActionButtons());
                 // Add event listeners to new elements
                 addEventListenersToRow(newRow);
                 return newRow;
@@ -490,8 +487,8 @@
                     }
                 } else if (action === 'add-above' || action === 'add-below') {
                     // Correctly calculate the number of content columns.
-                    // Total columns - 2 checkboxes - 1 timeline - 1 actions = number of editable content cells.
-                    const numContentCells = currentRow.cells.length - 4;
+                    // Total columns - 2 checkboxes - 1 timeline.
+                    const numContentCells = currentRow.cells.length - 3; 
                     const newRow = createNewRow(numContentCells);
 
                     if (action === 'add-above') {
@@ -500,6 +497,12 @@
                         currentRow.parentNode.insertBefore(newRow, currentRow.nextSibling);
                     }
                     domChanged = true;
+                }
+
+                // Remove any existing action row after an action is performed
+                const existingActionRow = document.querySelector('.action-row');
+                if (existingActionRow) {
+                    existingActionRow.remove();
                 }
 
                 if (domChanged) {
@@ -596,15 +599,37 @@
                 });
             });
 
-            // Use event delegation for row actions
-            document.querySelectorAll('table tbody').forEach(tbody => {
-                tbody.addEventListener('click', (e) => {
+            // --- ROW ACTIONS (ADD/DELETE) ---
+            let actionRow = null;
+            let hoverTimeout = null;
+
+            function createActionRow(targetRow) {
+                if (actionRow) actionRow.remove(); // Remove previous one
+                
+                actionRow = document.createElement('tr');
+                actionRow.className = 'action-row';
+                
+                const cell = document.createElement('td');
+                cell.colSpan = targetRow.cells.length;
+                cell.appendChild(createActionButtons());
+                actionRow.appendChild(cell);
+
+                actionRow.addEventListener('click', (e) => {
                     const actionButton = e.target.closest('[data-action]');
                     if (actionButton) {
-                        const currentRow = actionButton.closest('tr.task-row');
-                        handleRowAction(actionButton.dataset.action, currentRow);
+                        handleRowAction(actionButton.dataset.action, targetRow);
                     }
                 });
+
+                // Insert the action row below the target row
+                targetRow.parentNode.insertBefore(actionRow, targetRow.nextSibling);
+            }
+
+            document.querySelector('body').addEventListener('mouseover', (e) => {
+                const targetRow = e.target.closest('.task-row');
+                if (targetRow) {
+                    createActionRow(targetRow);
+                }
             });
 
             // --- INITIALIZATION ---
@@ -620,10 +645,7 @@
 
             // Add action buttons to all initial rows
             // This loop now also handles rows restored from localStorage
-            document.querySelectorAll('.task-row').forEach(row => {
-                if (row.lastElementChild && row.lastElementChild.innerHTML.trim() === '') {
-                    row.lastElementChild.appendChild(createActionButtons());
-                }
+            document.querySelectorAll('.task-row').forEach(row => { 
                 addEventListenersToRow(row);
             });
 
