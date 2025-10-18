@@ -9,43 +9,6 @@ import { initializeEventListeners } from './events.js';
 let allScripts = {};
 let activeScriptId = null;
 
-// --- Mock Data for Development ---
-const MOCK_SCRIPTS = {
-    "free-lesson-1-v2": {
-        id: "free-lesson-1-v2",
-        title: "10分钟火焰命中特效v2",
-        metadata: { scriptId: "free-lesson-1-v2", title: "10分钟火焰命中特效v2" },
-        sections: [
-            {
-                title: "第一部分：黄金15秒—“结果展示 & 价值承诺” (The Hook)",
-                chapters: [],
-                tasks: [
-                    { id: "task-0-0", video: true, audio: true, timestamp: "0:05", content: "**[快节奏混剪]** 视频成品...", dialogue: "(激昂、快节奏的背景音乐)", notes: "**目标：** 立即展示最终效果..." },
-                    { id: "task-0-1", video: false, audio: false, timestamp: "0:15", content: "**[画面淡入]** 简洁的动态个人Logo...", dialogue: "Hello everyone...", notes: "**优化点：** 按照蓝图建议..." }
-                ]
-            },
-            {
-                title: "第二部分：核心教学—“高密度、无废话” (The Core)",
-                tasks: [],
-                chapters: [
-                    {
-                        title: "章节1：搭建基础 - 通用材质 (约2.5分钟)",
-                        tasks: [
-                            { id: "task-1-0", video: true, audio: false, timestamp: "0:15", content: "**[画面]** 快速展示三张核心贴图...", dialogue: "首先，简单介绍一下...", notes: "**目标：** 让观众对所需资源有初步了解。" }
-                        ]
-                    }
-                ]
-            }
-        ]
-    },
-    "paid-lesson-1-v1": {
-        id: "paid-lesson-1-v1",
-        title: "UE5高级冰霜特效",
-        metadata: { scriptId: "paid-lesson-1-v1", title: "UE5高级冰霜特效" },
-        sections: []
-    }
-};
-
 // --- Core Functions ---
 
 /**
@@ -330,12 +293,7 @@ function findTaskById(script, taskId) {
 // --- Initialization ---
 
 function init() {
-    let data = storage.loadAllScripts();
-    // If storage is empty, load mock data for demonstration
-    if (Object.keys(data).length === 0) {
-        data = MOCK_SCRIPTS;
-    }
-    allScripts = data;
+    allScripts = storage.loadAllScripts();
 
     initializeEventListeners(app);
 
