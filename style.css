@@ -112,3 +112,29 @@
             color: #1d4ed8; /* Blue-700 */
             border-bottom-color: #1d4ed8; /* Blue-700 */
         }
+
+        /* Action Buttons for Rows */
+        .action-buttons {
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            display: flex;
+            gap: 0.75rem; /* space-x-3 */
+            align-items: center;
+        }
+
+        .task-row:hover .action-buttons {
+            opacity: 1;
+        }
+
+        .action-btn {
+            cursor: pointer;
+            color: #9ca3af; /* gray-400 */
+            transition: color 0.2s;
+        }
+
+        .action-btn:hover {
+            color: #3b82f6; /* blue-500 */
+        }
+        .action-btn.delete:hover {
+            color: #ef4444; /* red-500 */
+        }

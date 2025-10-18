@@ -16,7 +16,6 @@
             // --- VARIABLES ---
             const storageKeyProgress = 'fireEffectChecklistProgressV3';
             const storageKeyContent = 'fireEffectEditableContentV3'; // Key for editable content
-            const allTaskCheckboxes = document.querySelectorAll('.task-checkbox');
             const resetButton = document.getElementById('reset-button');
             const importButton = document.getElementById('import-button');
             const importFileInput = document.getElementById('import-file-input');
@@ -44,22 +43,25 @@
 
             function saveProgress() {
                 const progress = [];
-                allTaskCheckboxes.forEach((checkbox, index) => {
+                // Query checkboxes at the time of saving to support dynamic rows
+                document.querySelectorAll('.task-checkbox').forEach((checkbox, index) => {
                     progress[index] = checkbox.checked;
                 });
                 localStorage.setItem(storageKeyProgress, JSON.stringify(progress));
             }
 
             function loadProgress() {
+                const allTaskCheckboxes = document.querySelectorAll('.task-checkbox');
                 const savedProgress = localStorage.getItem(storageKeyProgress);
                 if (savedProgress) {
                     try {
                         const progress = JSON.parse(savedProgress);
                         if (progress.length !== allTaskCheckboxes.length) {
-                           throw new Error("Saved progress length mismatch");
+                           console.warn("Saved progress length mismatch. This can happen after adding/deleting rows. Progress might be partially lost.");
                         }
                         allTaskCheckboxes.forEach((checkbox, index) => {
-                            if (progress[index]) {
+                            // Only load if the index exists in the saved data
+                            if (progress[index] !== undefined) {
                                 checkbox.checked = true;
                             }
                         });
@@ -71,7 +73,7 @@
 
                     } catch (e) {
                         console.error("Failed to parse progress from localStorage or length mismatch.", e);
-                        localStorage.removeItem(storageKeyProgress);
+                        // Don't remove, to allow recovery if possible
                     }
                 }
                 updateAllGroupTitleStates();
@@ -79,9 +81,12 @@
             }
             
             function resetProgress() {
-                localStorage.removeItem(storageKeyProgress);
-                localStorage.removeItem(storageKeyContent); // Clear saved text content
-                window.location.reload(); // Reload the page to restore original state
+                const confirmed = confirm("您确定要重置所有进度和编辑内容吗？此操作不可撤销。");
+                if (confirmed) {
+                    localStorage.removeItem(storageKeyProgress);
+                    localStorage.removeItem(storageKeyContent); // Clear saved text content
+                    window.location.reload(); // Reload the page to restore original state
+                }
             }
 
             function updateGroupTitleState(groupContainer) {
@@ -94,7 +99,7 @@
             }
 
             function updateAllGroupTitleStates() {
-                 Array.from(allGroupContainers).reverse().forEach(container => {
+                 document.querySelectorAll('[data-group-container]').forEach(container => {
                     updateGroupTitleState(container);
                 });
             }
@@ -201,7 +206,7 @@
                 return sanitizedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             }
             
-            function assignEditableIds() {
+            function reassignAllIds() {
                 document.querySelectorAll('.editable').forEach(cell => {
                     const table = cell.closest('table');
                     const row = cell.closest('tr');
@@ -324,7 +329,7 @@
                 // 3. Iterate through each main card/section
                 document.querySelectorAll('div.card[data-group-container]').forEach(card => {
                     const cardHeader = card.querySelector('.card-header');
-                    const sectionTitle = cardHeader.querySelector('h2').textContent.replace(' ✓', '').trim();
+                    const sectionTitle = cardHeader.querySelector('h2, h3').textContent.replace(' ✓', '').trim();
                     markdownString += `## ${sectionTitle}\n\n`;
 
                     // Handle tables directly under the card
@@ -358,7 +363,9 @@
 
             function processTableToMarkdown(tableElement) {
                 let tableMd = '';
-                const headers = Array.from(tableElement.querySelectorAll('thead th')).map(th => th.textContent);
+                // Exclude the "操作" (Actions) column from export
+                const headers = Array.from(tableElement.querySelectorAll('thead th'))
+                    .filter(th => !th.textContent.includes('操作')).map(th => th.textContent);
                 tableMd += `| ${headers.join(' | ')} |\n`;
                 tableMd += `|${headers.map(h => h.includes('录') || h.includes('配') ? ' :---: ' : ' --- ').join('|')}|\n`;
 
@@ -372,7 +379,8 @@
                     const audioStatus = audioCheckbox.checked ? 'checked' : 'unchecked';
                     const metadata = `<!-- id:${id} video:${videoStatus} audio:${audioStatus} -->`;
 
-                    const cellsContent = Array.from(row.querySelectorAll('td')).slice(2).map(td => htmlToMarkdown(td.innerHTML).replace(/\|/g, '\\|').replace(/\n/g, '<br>'));
+                    // Slice from 2 to -1 to exclude checkboxes and the action cell
+                    const cellsContent = Array.from(row.querySelectorAll('td')).slice(2, -1).map(td => htmlToMarkdown(td.innerHTML).replace(/\|/g, '\\|').replace(/\n/g, '<br>'));
                     tableMd += `| ${videoCheckbox.checked ? '✓' : ' '} | ${audioCheckbox.checked ? '✓' : ' '} | ${metadata}${cellsContent.join(' | ')} |\n`;
                 });
                 return tableMd + '\n';
@@ -414,20 +422,94 @@
                 });
             }
 
-            // --- EVENT LISTENERS ---
-            allTaskCheckboxes.forEach(cb => {
-                cb.addEventListener('change', () => {
-                    const row = cb.closest('.task-row');
-                    if (row) {
-                        const allCheckedInRow = Array.from(row.querySelectorAll('.task-checkbox')).every(c => c.checked);
-                        row.classList.toggle('completed', allCheckedInRow);
+            function createActionButtons() {
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'action-buttons';
+                buttonsDiv.innerHTML = `
+                    <svg data-action="add-above" class="w-5 h-5 action-btn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-11.25a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z" clip-rule="evenodd" /></svg>
+                    <svg data-action="add-below" class="w-5 h-5 action-btn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM9.25 5.75a.75.75 0 0 0-1.5 0v2.5H5.25a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5H9.25V5.75Z" clip-rule="evenodd" /></svg>
+                    <svg data-action="delete" class="w-5 h-5 action-btn delete" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd" /></svg>
+                `;
+                return buttonsDiv;
+            }
+
+            function createNewRow(numEditableCells) {
+                const newRow = document.createElement('tr');
+                newRow.className = 'task-row';
+                newRow.innerHTML = `
+                    <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="video"></td>
+                    <td class="text-center"><input type="checkbox" class="task-checkbox" data-task-type="audio"></td>
+                    <td>0:00</td>
+                    ${Array(numEditableCells).fill('<td class="editable"></td>').join('')}
+                    <td class="text-center"></td>
+                `;
+                // Add action buttons to the last cell
+                newRow.lastElementChild.appendChild(createActionButtons());
+                // Add event listeners to new elements
+                addEventListenersToRow(newRow);
+                return newRow;
+            }
+
+            function handleRowAction(action, currentRow) {
+                let domChanged = false;
+                const parentCollapsible = currentRow.closest('.collapsible-content');
+
+                if (action === 'delete') {
+                    if (confirm('确定要删除这一行吗？')) {
+                        currentRow.remove();
+                        domChanged = true;
                     }
+                } else if (action === 'add-above' || action === 'add-below') {
+                    // Correctly calculate the number of content columns.
+                    // Total columns - 2 checkboxes - 1 timeline - 1 actions = number of editable content cells.
+                    const numContentCells = currentRow.cells.length - 4;
+                    const newRow = createNewRow(numContentCells);
+
+                    if (action === 'add-above') {
+                        currentRow.parentNode.insertBefore(newRow, currentRow);
+                    } else {
+                        currentRow.parentNode.insertBefore(newRow, currentRow.nextSibling);
+                    }
+                    domChanged = true;
+                }
+
+                if (domChanged) {
+                    // After any DOM change, re-ID and save everything
+                    reassignAllIds();
+                    saveEditableContent();
+                    saveProgress();
                     updateAllGroupTitleStates();
                     updateProgress();
-                    saveProgress();
+
+                    // Update the container's max-height to fit new content
+                    if (parentCollapsible && parentCollapsible.style.maxHeight && parentCollapsible.style.maxHeight !== '0px') {
+                        parentCollapsible.style.maxHeight = parentCollapsible.scrollHeight + "px";
+                    }
+                }
+            }
+
+            function addEventListenersToRow(row) {
+                row.querySelectorAll('.task-checkbox').forEach(cb => {
+                    cb.addEventListener('change', onCheckboxChange);
                 });
-            });
-            
+                row.querySelectorAll('.editable').forEach(cell => {
+                    cell.addEventListener('dblclick', () => makeCellEditable(cell));
+                });
+            }
+
+            function onCheckboxChange(event) {
+                const cb = event.target;
+                const row = cb.closest('.task-row');
+                if (row) {
+                    const allCheckedInRow = Array.from(row.querySelectorAll('.task-checkbox')).every(c => c.checked);
+                    row.classList.toggle('completed', allCheckedInRow);
+                }
+                updateAllGroupTitleStates();
+                updateProgress();
+                saveProgress();
+            }
+
+            // --- EVENT LISTENERS ---
             document.querySelectorAll('.group-title').forEach(title => {
                 title.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -484,8 +566,15 @@
                 });
             });
 
-            document.querySelectorAll('.editable').forEach(cell => {
-                cell.addEventListener('dblclick', () => makeCellEditable(cell));
+            // Use event delegation for row actions
+            document.querySelectorAll('table tbody').forEach(tbody => {
+                tbody.addEventListener('click', (e) => {
+                    const actionButton = e.target.closest('[data-action]');
+                    if (actionButton) {
+                        const currentRow = actionButton.closest('tr.task-row');
+                        handleRowAction(actionButton.dataset.action, currentRow);
+                    }
+                });
             });
 
             // --- INITIALIZATION ---
@@ -496,7 +585,13 @@
                 chevron?.classList.add('rotate-180');
             });
             
-            assignEditableIds();
+            // Add action buttons to all initial rows
+            document.querySelectorAll('.task-row').forEach(row => {
+                row.lastElementChild.appendChild(createActionButtons());
+                addEventListenersToRow(row);
+            });
+
+            reassignAllIds();
             loadProgress();
             loadEditableContent();
             applyAllFormatting(document.querySelectorAll('.editable'));
