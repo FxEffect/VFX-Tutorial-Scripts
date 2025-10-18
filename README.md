@@ -9,6 +9,7 @@
 *   **双击编辑**: 用户可以直接在网页上双击表格单元格来编辑脚本内容。
 *   **动态格式化**: 自动高亮特定关键词（如 `[操作]`）并为英文短语添加点击朗读功能。
 *   **导入/导出**: 支持将整个脚本（包括内容和进度）导出为人类可读的 Markdown 文件，并能从该文件完美恢复页面状态。
+*   **动态行管理**: 用户可以通过悬浮菜单方便地在表格任意位置添加或删除行，所有结构改动都会被自动保存。
 
 ### 2. 核心架构与设计
 
@@ -16,11 +17,12 @@
 
 **初始化流程 (`DOMContentLoaded`):**
 
-1.  `assignEditableIds()`: **(关键步骤)** 遍历所有可编辑单元格 (`.editable`)，并根据其在文档中的位置（表格索引、行索引、列索引）生成一个唯一的 `data-editable-id` 属性。这个 ID 是数据持久化和导入/导出功能的基石。
-2.  `loadEditableContent()`: 从 `localStorage` 读取已保存的单元格内容，并恢复到页面上。
+1.  `loadStructure()`: **(结构恢复)** 首先从 `localStorage` 读取并恢复表格的 HTML 结构。这是实现动态增删行持久化的关键。
+2.  `reassignAllIds()`: **(ID重分配)** 遍历所有可编辑单元格 (`.editable`)，并根据其在文档中的最新位置（表格索引、行索引、列索引）生成一个唯一的 `data-editable-id` 属性。这个 ID 是数据持久化和导入/导出功能的基石。
 3.  `loadProgress()`: 从 `localStorage` 读取所有复选框的勾选状态，并恢复到页面上。
-4.  `applyAllFormatting()`: 对所有可编辑单元格执行一次动态格式化，渲染出高亮标签和朗读短语。
-5.  **设置初始状态**: 默认展开所有可折叠内容，并为所有交互元素绑定事件监听器。
+4.  `loadEditableContent()`: 从 `localStorage` 读取已保存的单元格内容，并恢复到页面上。
+5.  `applyAllFormatting()`: 对所有可编辑单元格执行一次动态格式化，渲染出高亮标签和朗读短语。
+6.  **设置初始状态**: 默认展开所有可折叠内容，并为所有交互元素（包括悬浮操作按钮）绑定事件监听器。
 
 ### 3. 功能模块详解
 
@@ -28,9 +30,10 @@
 
 *   **`storageKeyProgress` (`fireEffectChecklistProgressV3`)**: 用于存储所有任务复选框 (`.task-checkbox`) 的勾选状态。数据被保存为一个布尔值数组。
 *   **`storageKeyContent` (`fireEffectEditableContentV3`)**: 用于存储所有被编辑过的单元格内容。数据被保存为一个对象，`key` 是单元格的 `data-editable-id`，`value` 是单元格的 `innerHTML`。
+*   **`storageKeyStructure` (`fireEffectTableStructureV3`)**: 用于存储所有表格主体 (`<tbody>`) 的 `innerHTML`。这是实现动态行持久化的核心。
 *   **`saveProgress()` / `loadProgress()`**: 负责复选框进度的存取。
 *   **`saveEditableContent()` / `loadEditableContent()`**: 负责单元格内容的存取。
-*   **`resetProgress()`**: 清除上述两个 `localStorage` 条目并刷新页面，恢复到初始状态。
+*   **`resetProgress()`**: 清除上述所有 `localStorage` 条目并刷新页面，恢复到初始状态。
 
 #### 3.2 进度跟踪与 UI 更新
 
@@ -75,7 +78,7 @@
 ### 4. 如何修改与扩展
 
 *   **添加/删除任务行**:
-    *   **非常简单**。您只需要在 HTML 的 `<tbody>` 中直接添加或删除 `<tr>` 元素即可。只要新行遵循现有的 `class` 结构（如 `.task-row`, `.editable`, `.task-checkbox`），脚本会在页面加载时自动识别并使其具备所有交互功能。**无需修改任何 JavaScript 代码**。
+    *   **通过UI操作**：将鼠标悬停在任意一行上，下方会浮现出操作栏，您可以点击按钮在当前行的上方或下方添加新行，或删除当前行。所有更改都会被自动保存。
 
 *   **添加新的章节/分组**:
     *   同样，只需在 HTML 中复制现有的卡片 (`<div class="card" data-group-container>...</div>`) 或章节结构，然后修改标题和表格内容即可。脚本会自动处理新的分组。
