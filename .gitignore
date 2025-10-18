@@ -18,3 +18,6 @@ notes.txt
 
 # 忽略脚本规范文档，因为它可能包含个人设计思路
 SCRIPT_MARKDOWN_GUIDE.md
+
+# 忽略存放所有视频脚本的源文件目录
+manuscripts/

@@ -290,6 +290,11 @@ function createTaskRowElement(task) {
 function htmlToMarkdown(html) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
+
+    // First, revert special spans back to their text content
+    tempDiv.querySelectorAll('.tag, .tts-phrase').forEach(el => {
+        el.replaceWith(document.createTextNode(el.textContent));
+    });
     // Basic conversion, can be expanded
     tempDiv.querySelectorAll('strong, b').forEach(el => el.replaceWith(`**${el.innerHTML}**`));
     tempDiv.querySelectorAll('br').forEach(el => el.replaceWith('\n'));
