@@ -1,3 +1,4 @@
+
         // --- TEXT TO SPEECH ---
         function speakWord(word, event) {
             event.stopPropagation(); // Prevent triggering other events like double-click
@@ -16,6 +17,7 @@
             // --- VARIABLES ---
             const storageKeyProgress = 'fireEffectChecklistProgressV3';
             const storageKeyContent = 'fireEffectEditableContentV3'; // Key for editable content
+            const storageKeyStructure = 'fireEffectTableStructureV3'; // Key for table structure
             const resetButton = document.getElementById('reset-button');
             const importButton = document.getElementById('import-button');
             const importFileInput = document.getElementById('import-file-input');
@@ -62,7 +64,7 @@
                         allTaskCheckboxes.forEach((checkbox, index) => {
                             // Only load if the index exists in the saved data
                             if (progress[index] !== undefined) {
-                                checkbox.checked = true;
+                                checkbox.checked = progress[index];
                             }
                         });
                         // Update row completed status after loading
@@ -85,6 +87,7 @@
                 if (confirmed) {
                     localStorage.removeItem(storageKeyProgress);
                     localStorage.removeItem(storageKeyContent); // Clear saved text content
+                    localStorage.removeItem(storageKeyStructure); // Clear saved structure
                     window.location.reload(); // Reload the page to restore original state
                 }
             }
@@ -248,6 +251,31 @@
                 }
             }
 
+            function saveStructure() {
+                const structures = [];
+                document.querySelectorAll('table tbody').forEach(tbody => {
+                    structures.push(tbody.innerHTML);
+                });
+                localStorage.setItem(storageKeyStructure, JSON.stringify(structures));
+            }
+
+            function loadStructure() {
+                const savedStructures = localStorage.getItem(storageKeyStructure);
+                if (!savedStructures) return;
+
+                try {
+                    const structures = JSON.parse(savedStructures);
+                    const allTbodies = document.querySelectorAll('table tbody');
+                    if (structures.length === allTbodies.length) {
+                        allTbodies.forEach((tbody, index) => {
+                            tbody.innerHTML = structures[index];
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to parse or apply table structure from localStorage", e);
+                }
+            }
+
             function handleMarkdownImport(file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -257,6 +285,7 @@
                         
                         // After successful import, save and refresh the entire UI
                         saveEditableContent();
+                        saveStructure(); // Save the new structure if import changes it
                         saveProgress();
                         updateAllGroupTitleStates();
                         updateProgress();
@@ -475,6 +504,7 @@
 
                 if (domChanged) {
                     // After any DOM change, re-ID and save everything
+                    saveStructure();
                     reassignAllIds();
                     saveEditableContent();
                     saveProgress();
@@ -585,9 +615,15 @@
                 chevron?.classList.add('rotate-180');
             });
             
+            // Load structure first to rebuild dynamic rows
+            loadStructure();
+
             // Add action buttons to all initial rows
+            // This loop now also handles rows restored from localStorage
             document.querySelectorAll('.task-row').forEach(row => {
-                row.lastElementChild.appendChild(createActionButtons());
+                if (row.lastElementChild && row.lastElementChild.innerHTML.trim() === '') {
+                    row.lastElementChild.appendChild(createActionButtons());
+                }
                 addEventListenersToRow(row);
             });
 
