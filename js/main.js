@@ -15,23 +15,67 @@ const MOCK_SCRIPTS = {
         id: "free-lesson-1-v2",
         title: "10分钟火焰命中特效v2",
         metadata: { scriptId: "free-lesson-1-v2", title: "10分钟火焰命中特效v2" },
-        content: "# 10分钟火焰命中特效v2..."
+        sections: [
+            {
+                title: "第一部分：黄金15秒—“结果展示 & 价值承诺” (The Hook)",
+                chapters: [],
+                tasks: [
+                    { id: "task-0-0", video: true, audio: true, timestamp: "0:05", content: "**[快节奏混剪]** 视频成品...", dialogue: "(激昂、快节奏的背景音乐)", notes: "**目标：** 立即展示最终效果..." },
+                    { id: "task-0-1", video: false, audio: false, timestamp: "0:15", content: "**[画面淡入]** 简洁的动态个人Logo...", dialogue: "Hello everyone...", notes: "**优化点：** 按照蓝图建议..." }
+                ]
+            },
+            {
+                title: "第二部分：核心教学—“高密度、无废话” (The Core)",
+                tasks: [],
+                chapters: [
+                    {
+                        title: "章节1：搭建基础 - 通用材质 (约2.5分钟)",
+                        tasks: [
+                            { id: "task-1-0", video: true, audio: false, timestamp: "0:15", content: "**[画面]** 快速展示三张核心贴图...", dialogue: "首先，简单介绍一下...", notes: "**目标：** 让观众对所需资源有初步了解。" }
+                        ]
+                    }
+                ]
+            }
+        ]
     },
     "paid-lesson-1-v1": {
         id: "paid-lesson-1-v1",
         title: "UE5高级冰霜特效",
         metadata: { scriptId: "paid-lesson-1-v1", title: "UE5高级冰霜特效" },
-        content: "# UE5高级冰霜特效..."
-    },
-    "paid-lesson-2-v1": {
-        id: "paid-lesson-2-v1",
-        title: "程序化生成闪电",
-        metadata: { scriptId: "paid-lesson-2-v1", title: "程序化生成闪电" },
-        content: "# 程序化生成闪电..."
+        sections: []
     }
 };
 
 // --- Core Functions ---
+
+/**
+ * Calculates and updates the progress for the active script, then saves all data.
+ */
+function updateAndSaveProgress() {
+    if (!activeScriptId) return;
+
+    const script = allScripts[activeScriptId];
+    if (!script || !script.sections) {
+        ui.updateProgress(0, 0);
+        return;
+    }
+
+    const allTasks = script.sections.flatMap(s => (s.tasks || []).concat((s.chapters || []).flatMap(c => c.tasks || [])));
+    
+    if (allTasks.length === 0) {
+        ui.updateProgress(0, 0);
+        return;
+    }
+
+    const completedVideoTasks = allTasks.filter(t => t.video).length;
+    const videoPercentage = Math.round((completedVideoTasks / allTasks.length) * 100);
+
+    const completedAudioTasks = allTasks.filter(t => t.audio).length;
+    const audioPercentage = Math.round((completedAudioTasks / allTasks.length) * 100);
+
+    ui.updateProgress(videoPercentage, audioPercentage);
+    storage.saveAllScripts(allScripts);
+}
 
 /**
  * Loads a script into the main view and updates the UI.
@@ -52,6 +96,7 @@ function loadScript(scriptId) {
     ui.renderScriptContent(scriptObject);
     ui.renderScriptList(allScripts, activeScriptId); // Re-render list to update active state
     ui.showScriptContent();
+    updateAndSaveProgress(); // Update progress bar for the newly loaded script
 }
 
 // --- Event Handlers ---
@@ -60,6 +105,74 @@ const app = {
     handleScriptSelect(scriptId) {
         if (scriptId !== activeScriptId) {
             loadScript(scriptId);
+        }
+    },
+
+    handleCheckboxChange(checkbox) {
+        if (!activeScriptId) return;
+
+        const taskId = checkbox.closest('.task-row').dataset.taskId;
+        const taskType = checkbox.dataset.taskType; // 'video' or 'audio'
+        const isChecked = checkbox.checked;
+
+        const script = allScripts[activeScriptId];
+        let taskFound = false;
+
+        for (const section of script.sections) {
+            if (taskFound) break;
+            let tasks = section.tasks || [];
+            let task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task[taskType] = isChecked;
+                taskFound = true;
+                break;
+            }
+
+            if (section.chapters) {
+                for (const chapter of section.chapters) {
+                    let chapterTasks = chapter.tasks || [];
+                    let task = chapterTasks.find(t => t.id === taskId);
+                    if (task) {
+                        task[taskType] = isChecked;
+                        taskFound = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if(taskFound) {
+            updateAndSaveProgress();
+        }
+    },
+
+    handleCellDblClick(cell) {
+        if (!activeScriptId) return;
+
+        const row = cell.closest('.task-row');
+        const taskId = row.dataset.taskId;
+        const propertyToEdit = cell.dataset.property;
+
+        if (!propertyToEdit) return;
+
+        const script = allScripts[activeScriptId];
+        let taskToEdit = null;
+
+        // Find the task to edit
+        for (const section of script.sections) {
+            let task = (section.tasks || []).find(t => t.id === taskId) || 
+                       (section.chapters || []).flatMap(c => c.tasks || []).find(t => t.id === taskId);
+            if (task) {
+                taskToEdit = task;
+                break;
+            }
+        }
+
+        if (taskToEdit) {
+            ui.makeCellEditable(cell, (newHtml) => {
+                taskToEdit[propertyToEdit] = newHtml;
+                storage.saveAllScripts(allScripts);
+            });
         }
     },
 
@@ -92,7 +205,6 @@ const app = {
             alert("没有可导出的活动脚本。");
             return;
         }
-        // This is a simplified version. The real one will be more complex.
         const scriptObject = allScripts[activeScriptId];
         const markdownString = parser.serializeToMarkdown(scriptObject);
         
