@@ -74,6 +74,7 @@ function updateAndSaveProgress() {
     const audioPercentage = Math.round((completedAudioTasks / allTasks.length) * 100);
 
     ui.updateProgress(videoPercentage, audioPercentage);
+    ui.updateGroupCompletionStyles(); // Update title styles (green text, checkmark)
     storage.saveAllScripts(allScripts);
 }
 
@@ -96,6 +97,7 @@ function loadScript(scriptId) {
     ui.renderScriptContent(scriptObject);
     ui.renderScriptList(allScripts, activeScriptId); // Re-render list to update active state
     ui.showScriptContent();
+    ui.updateGroupCompletionStyles(); // Initial check for title styles
     updateAndSaveProgress(); // Update progress bar for the newly loaded script
 }
 
@@ -143,6 +145,54 @@ const app = {
         
         if(taskFound) {
             updateAndSaveProgress();
+        }
+    },
+
+    handleGroupCheckAll(groupTitleElement) {
+        if (!activeScriptId) return;
+
+        // Find the container of the tasks for this group
+        const taskContainer = groupTitleElement.closest('[data-group-container]');
+        if (!taskContainer) return;
+
+        const checkboxes = taskContainer.querySelectorAll('.task-checkbox');
+        if (checkboxes.length === 0) return;
+
+        // Check if all are already checked. If so, do nothing.
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        if (allChecked) return;
+
+        const script = allScripts[activeScriptId];
+
+        // Find all tasks within this container and update their state
+        const taskRows = taskContainer.querySelectorAll('.task-row');
+        taskRows.forEach(row => {
+            const taskId = row.dataset.taskId;
+            const task = findTaskById(script, taskId);
+            if (task) {
+                task.video = true;
+                task.audio = true;
+            }
+            // Also update the UI directly for immediate feedback
+            row.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = true);
+        });
+
+        // Update progress and save
+        updateAndSaveProgress();
+    },
+
+    handleCollapseToggle(cardElement) {
+        const content = cardElement.querySelector('.collapsible-content');
+        const chevron = cardElement.querySelector('.chevron');
+
+        if (content && chevron) {
+            chevron.classList.toggle('rotate-180');
+            // Check if content is currently open (has a maxHeight)
+            if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                content.style.maxHeight = null; // Collapse it
+            } else {
+                content.style.maxHeight = content.scrollHeight + 'px'; // Expand it
+            }
         }
     },
 
@@ -206,7 +256,16 @@ const app = {
             return;
         }
         const scriptObject = allScripts[activeScriptId];
-        const markdownString = parser.serializeToMarkdown(scriptObject);
+
+        // Calculate current progress to include in the export
+        const allTasks = scriptObject.sections.flatMap(s => (s.tasks || []).concat((s.chapters || []).flatMap(c => c.tasks || [])));
+        const totalTasks = allTasks.length;
+        const videoPercentage = totalTasks > 0 ? Math.round((allTasks.filter(t => t.video).length / totalTasks) * 100) : 0;
+        const audioPercentage = totalTasks > 0 ? Math.round((allTasks.filter(t => t.audio).length / totalTasks) * 100) : 0;
+
+        const markdownString = parser.serializeToMarkdown(scriptObject, {
+            videoPercentage, audioPercentage
+        });
         
         const blob = new Blob([markdownString], { type: 'text/markdown;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -241,6 +300,29 @@ const app = {
         }
     }
 };
+
+// --- Helper Functions ---
+
+/**
+ * Finds a task by its ID within a script object.
+ * @param {object} script - The script object.
+ * @param {string} taskId - The ID of the task to find.
+ * @returns {object|null} The found task object or null.
+ */
+function findTaskById(script, taskId) {
+    for (const section of script.sections) {
+        let task = (section.tasks || []).find(t => t.id === taskId);
+        if (task) return task;
+
+        if (section.chapters) {
+            for (const chapter of section.chapters) {
+                task = (chapter.tasks || []).find(t => t.id === taskId);
+                if (task) return task;
+            }
+        }
+    }
+    return null;
+}
 
 // --- Initialization ---
 

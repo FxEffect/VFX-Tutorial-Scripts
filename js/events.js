@@ -47,10 +47,43 @@ export function initializeEventListeners(app) {
 
     // Add other event listeners using delegation as needed, for example:
     const scriptTablesContainer = document.getElementById('script-tables-container');
+    
+    // Listener for checkbox changes (e.g., ticking a task)
     scriptTablesContainer.addEventListener('change', (event) => {
         if (event.target.classList.contains('task-checkbox')) {
-            // app.handleCheckboxChange(event.target);
-            console.log('Checkbox changed (logic to be implemented)');
+            app.handleCheckboxChange(event.target);
+        }
+    });
+
+    // Listener for double-clicking on editable cells
+    scriptTablesContainer.addEventListener('dblclick', (event) => {
+        const cell = event.target.closest('td.editable');
+        if (cell) {
+            app.handleCellDblClick(cell);
+        }
+    });
+
+    // Listener for collapsing/expanding script sections
+    scriptTablesContainer.addEventListener('click', (event) => {
+        const groupTitle = event.target.closest('.group-title');
+        const header = event.target.closest('.card-header');
+
+        // If the title text itself (or the checkmark) is clicked, handle "check all"
+        if (groupTitle) {
+            event.stopPropagation(); // Prevent the header click from firing
+            app.handleGroupCheckAll(groupTitle);
+            return; // Stop further processing
+        }
+
+        // If the header area (but not the title text) is clicked, handle collapse/expand
+        if (header) {
+            const card = header.closest('.card');
+            const content = card.querySelector('.collapsible-content');
+            const chevron = header.querySelector('.chevron');
+
+            if (content && chevron) {
+                app.handleCollapseToggle(card);
+            }
         }
     });
 }

@@ -74,6 +74,17 @@ export function renderScriptContent(scriptObject) {
         scriptTablesContainer.appendChild(sectionEl);
     });
 
+    // After rendering, automatically expand the first section for better UX
+    const firstCard = scriptTablesContainer.querySelector('.card');
+    if (firstCard) {
+        const content = firstCard.querySelector('.collapsible-content');
+        const chevron = firstCard.querySelector('.chevron');
+        if (content && chevron) {
+            content.style.maxHeight = content.scrollHeight + 'px';
+            chevron.classList.add('rotate-180');
+        }
+    }
+
     // Placeholder for progress calculation
     updateProgress(0, 0); 
 }
@@ -89,6 +100,27 @@ export function updateProgress(videoPercentage, audioPercentage) {
     progressTextVideo.textContent = videoPercentage + '%';
     progressBarAudio.style.width = audioPercentage + '%';
     progressTextAudio.textContent = audioPercentage + '%';
+}
+
+/**
+ * Updates the visual style of group titles (h2, h3) based on task completion.
+ * If all tasks in a group are checked, the title gets a 'group-completed' class.
+ */
+export function updateGroupCompletionStyles() {
+    const groupContainers = scriptTablesContainer.querySelectorAll('[data-group-container]');
+    groupContainers.forEach(container => {
+        const title = container.querySelector('.group-title');
+        const checkboxes = container.querySelectorAll('.task-checkbox');
+        
+        if (title && checkboxes.length > 0) {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            if (allChecked) {
+                title.classList.add('group-completed');
+            } else {
+                title.classList.remove('group-completed');
+            }
+        }
+    });
 }
 
 /**
@@ -112,7 +144,8 @@ export function makeCellEditable(cell, onSave) {
 
     const saveEdit = () => {
         const newHtml = markdownToHtml(textarea.value);
-        cell.innerHTML = newHtml;
+        // Apply formatting after saving
+        cell.innerHTML = formatCellContent(newHtml);
         onSave(newHtml);
     };
 
@@ -168,7 +201,7 @@ function createSectionElement(section) {
             const chapterDiv = document.createElement('div');
             chapterDiv.className = 'px-6 pb-6 border-b border-gray-200';
             chapterDiv.dataset.groupContainer = '';
-            chapterDiv.innerHTML = `<h3 class="text-xl font-semibold mt-6 mb-4 flex items-center group-title"><span>${chapter.title}</span><span class="checkmark">✓</span></h3>`;
+    chapterDiv.innerHTML = `<h3 class="text-xl font-semibold mt-6 mb-4 group-title"><span>${chapter.title}</span><span class="checkmark">✓</span></h3>`;
             chapterDiv.appendChild(createTableElement(chapter.tasks));
             content.appendChild(chapterDiv);
         });
@@ -224,18 +257,22 @@ function createTaskRowElement(task) {
     const timestampCell = document.createElement('td');
     timestampCell.className = 'editable';
     timestampCell.textContent = task.timestamp;
+    timestampCell.dataset.property = 'timestamp';
 
     const contentCell = document.createElement('td');
     contentCell.className = 'editable';
-    contentCell.innerHTML = task.content; // Use innerHTML to render bold/strong tags
+    contentCell.innerHTML = markdownToHtml(task.content); // Convert MD to HTML on render
+    contentCell.dataset.property = 'content';
 
     const dialogueCell = document.createElement('td');
     dialogueCell.className = 'editable';
-    dialogueCell.innerHTML = task.dialogue;
+    dialogueCell.innerHTML = markdownToHtml(task.dialogue); // Convert MD to HTML on render
+    dialogueCell.dataset.property = 'dialogue';
 
     const notesCell = document.createElement('td');
     notesCell.className = 'editable';
-    notesCell.innerHTML = task.notes;
+    notesCell.innerHTML = markdownToHtml(task.notes); // Convert MD to HTML on render
+    notesCell.dataset.property = 'notes';
 
     tr.appendChild(videoCell);
     tr.appendChild(audioCell);
@@ -249,6 +286,7 @@ function createTaskRowElement(task) {
 
 // --- Private Helper Functions ---
 
+// Helper to convert basic HTML back to Markdown for editing
 function htmlToMarkdown(html) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
@@ -258,12 +296,95 @@ function htmlToMarkdown(html) {
     return tempDiv.textContent;
 }
 
+// Helper to convert Markdown to HTML
 function markdownToHtml(markdown) {
     const sanitizer = document.createElement('div');
     sanitizer.textContent = markdown;
     let sanitizedText = sanitizer.innerHTML;
-    // Basic conversion, can be expanded
-    return sanitizedText
+    // Basic Markdown conversion
+    let html = sanitizedText
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\n/g, '<br>');
+    
+    // Apply special formatting like tags and speech phrases
+    return formatCellContent(html);
+}
+
+/**
+ * Applies special formatting to the cell's HTML content.
+ * 1. Highlights keyword tags like [画面].
+ * 2. Wraps English phrases for text-to-speech functionality.
+ * @param {string} html - The HTML string to format.
+ * @returns {string} The formatted HTML string.
+ */
+function formatCellContent(html) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+
+    // 1. Highlight keyword tags
+    const tagClasses = {
+        '画面': 'tag-huamian', '操作': 'tag-caozuo', '讲解': 'tag-jiangjie', '讲解与操作': 'tag-jiangjie',
+        '视觉引导': 'tag-shijue', '快节奏混剪': 'tag-huamian', '画面淡入': 'tag-huamian',
+        '加速快进': 'tag-caozuo', '加速播放': 'tag-shijue'
+    };
+    tempDiv.innerHTML = tempDiv.innerHTML.replace(/\[(.*?)\]/g, (match, tagContent) => {
+        const key = tagContent.trim();
+        const tagClass = tagClasses[key] || 'tag-default';
+        return `<span class="tag ${tagClass}">${match}</span>`;
+    });
+
+    // 2. Add speech phrases for English words
+    const englishPhraseRegex = /\b([A-Za-z0-9_.-]{2,}(?:\s+[A-Za-z0-9_.-]{2,})*)\b/g;
+    const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT);
+    const nodesToProcess = [];
+    let currentNode;
+    while (currentNode = walker.nextNode()) {
+        // Process only text nodes that are not already inside a tts-phrase span
+        if (!currentNode.parentElement.closest('.tts-phrase, .tag')) {
+            nodesToProcess.push(currentNode);
+        }
+    }
+
+    nodesToProcess.forEach(node => {
+        const text = node.textContent;
+        if (!englishPhraseRegex.test(text) || /^\d+$/.test(text.trim())) return;
+
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+        text.replace(englishPhraseRegex, (match, phrase, offset) => {
+            if (offset > lastIndex) {
+                fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset)));
+            }
+            if (/^\d+$/.test(phrase.trim())) {
+                fragment.appendChild(document.createTextNode(match));
+            } else {
+                const phraseSpan = document.createElement('span');
+                phraseSpan.className = 'tts-phrase';
+                phraseSpan.textContent = phrase;
+                phraseSpan.onclick = (event) => speakWord(phrase, event);
+                fragment.appendChild(phraseSpan);
+            }
+            lastIndex = offset + match.length;
+        });
+
+        if (lastIndex < text.length) {
+            fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+        node.parentNode.replaceChild(fragment, node);
+    });
+
+    return tempDiv.innerHTML;
+}
+
+// Text-to-speech function
+function speakWord(word, event) {
+    event.stopPropagation();
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word.trim());
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    } else {
+        alert('抱歉，您的浏览器不支持语音朗读功能。');
+    }
 }

@@ -1,82 +1,112 @@
-// Parser Module: Handles parsing .md files and converting to/from script objects.
+// Parser Module: Handles conversion between Markdown and Script Objects
 
 /**
- * Parses the YAML front matter from markdown content.
- * @param {string} markdownContent - The full markdown text.
- * @returns {object} The parsed metadata.
+ * Parses a Markdown string into a structured script object.
+ * It extracts metadata from the frontmatter and table data from the body.
+ *
+ * @param {string} markdownContent - The full content of the markdown file.
+ * @returns {object} A structured script object.
+ * @throws {Error} If the scriptId is missing or the format is invalid.
  */
-function parseFrontMatter(markdownContent) {
-    const match = markdownContent.match(/^[---\r\n]([\s\S]+?)\n[---\r\n]/);
-    if (!match) return {};
+export function parseMarkdown(markdownContent) {
+    const scriptObject = {
+        metadata: {},
+        sections: [],
+    };
 
-    const yaml = match[1];
-    const metadata = {};
-    yaml.split('\n').forEach(line => {
+    const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
+    const frontmatterMatch = markdownContent.match(frontmatterRegex);
+
+    if (!frontmatterMatch) {
+        throw new Error("Markdown frontmatter (---...---) not found.");
+    }
+
+    const frontmatterContent = frontmatterMatch[1];
+    const bodyContent = markdownContent.substring(frontmatterMatch[0].length);
+
+    frontmatterContent.split('\n').forEach(line => {
         const parts = line.split(':');
         if (parts.length >= 2) {
             const key = parts[0].trim();
-            const value = parts.slice(1).join(':').trim().replace(/"/g, '');
-            metadata[key] = value;
+            const value = parts.slice(1).join(':').trim().replace(/^"(.*)"$/, '$1');
+
+            // CRITICAL: Ignore progress from MD file, it will be recalculated.
+            if (key === 'videoProgress' || key === 'audioProgress') {
+                return;
+            }
+
+            scriptObject.metadata[key] = value;
+            if (key === 'scriptId') {
+                scriptObject.id = value;
+            }
+            if (key === 'title') {
+                scriptObject.title = value;
+            }
         }
     });
-    return metadata;
-}
 
-/**
- * Parses the full markdown content into a structured script object.
- * @param {string} markdownContent - The full markdown text.
- * @returns {object} A structured script object.
- */
-export function parseMarkdown(markdownContent) {
-    const metadata = parseFrontMatter(markdownContent);
-    if (!metadata.scriptId || !metadata.title) {
-        throw new Error("Markdown file is missing required 'scriptId' or 'title' in the front matter.");
+    if (!scriptObject.id) {
+        throw new Error("`scriptId` is missing in the Markdown frontmatter.");
     }
 
-    const lines = markdownContent.split(/\r?\n/);
-    const sections = [];
+    const sections = bodyContent.split(/^(?=## |### )/m);
+
     let currentSection = null;
     let currentChapter = null;
-    let inTable = false;
+    let taskCounter = 0;
 
-    const metadataRegex = /<!-- id:(.*?) video:(checked|unchecked) audio:(checked|unchecked) -->/;
+    sections.forEach(sectionContent => {
+        if (sectionContent.trim() === '') return;
 
-    for (const line of lines) {
-        const trimmedLine = line.trim();
+        const h2Match = sectionContent.match(/^## (.*)/);
+        const h3Match = sectionContent.match(/^### (.*)/);
 
-        if (trimmedLine.startsWith('## ')) {
-            // Finish previous section before starting a new one
-            if (currentSection) sections.push(currentSection);
-            
-            currentSection = { title: trimmedLine.substring(3).trim(), chapters: [], tasks: [] };
-            currentChapter = null;
-            inTable = false;
-        } else if (trimmedLine.startsWith('### ')) {
-            if (!currentSection) continue; // Should not happen in valid files
-            
-            currentChapter = { title: trimmedLine.substring(4).trim(), tasks: [] };
-            currentSection.chapters.push(currentChapter);
-            inTable = false;
-        } else if (trimmedLine.startsWith('| :---:')) {
-            inTable = true;
-        } else if (inTable && trimmedLine.startsWith('|')) {
-            const parts = trimmedLine.split('|').map(p => p.trim()).slice(1, -1);
-            if (parts.length < 5) continue; // Not a valid task row
-
-            const metadataMatch = parts[2].match(metadataRegex);
-            if (!metadataMatch) continue;
-
-            const [, id, videoStatus, audioStatus] = metadataMatch;
-            
-            const task = {
-                id: id.trim(),
-                video: videoStatus === 'checked',
-                audio: audioStatus === 'checked',
-                timestamp: parts[2].replace(metadataRegex, '').trim(),
-                content: parts[3].replace(/<br>/g, '\n'),
-                dialogue: parts[4].replace(/<br>/g, '\n'),
-                notes: (parts[5] || '').replace(/<br>/g, '\n')
+        if (h2Match) {
+            currentSection = {
+                title: h2Match[1].trim(),
+                chapters: [],
+                tasks: [],
             };
+            scriptObject.sections.push(currentSection);
+            currentChapter = null; // Reset chapter when a new section starts
+        } else if (h3Match && currentSection) {
+            currentChapter = {
+                title: h3Match[1].trim(),
+                tasks: [],
+            };
+            currentSection.chapters.push(currentChapter);
+        }
+
+        const tableRegex = /\|([\s\S]*?)\|\s*\n/g;
+        let tableMatch;
+        while ((tableMatch = tableRegex.exec(sectionContent)) !== null) {
+            const rowContent = tableMatch[1].trim();
+            if (rowContent.includes('---')) continue; // Skip header separator
+            // Skip header row itself by checking for a keyword that only appears in the header
+            if (rowContent.includes('画面内容')) continue;
+
+            const cells = rowContent.split('|').map(cell => cell.trim());
+            if (cells.length < 6) continue; // Expect at least 6 columns
+
+            const task = {};
+            const commentRegex = /<!--\s*id:([^ ]+)\s*video:([^ ]+)\s*audio:([^ ]+)\s*-->/;
+            const commentMatch = cells[2].match(commentRegex) || cells[0].match(commentRegex);
+
+            if (commentMatch) {
+                task.id = commentMatch[1];
+                task.video = commentMatch[2] === 'checked';
+                task.audio = commentMatch[3] === 'checked';
+            } else {
+                // Fallback if no comment found
+                task.id = `task-${scriptObject.sections.length}-${taskCounter++}`;
+                task.video = cells[0].includes('✓');
+                task.audio = cells[1].includes('✓');
+            }
+
+            task.timestamp = cells[2].replace(commentRegex, '').trim();
+            task.content = cells[3];
+            task.dialogue = cells[4];
+            task.notes = cells[5];
 
             if (currentChapter) {
                 currentChapter.tasks.push(task);
@@ -84,67 +114,70 @@ export function parseMarkdown(markdownContent) {
                 currentSection.tasks.push(task);
             }
         }
-    }
-    if (currentSection) sections.push(currentSection); // Add the last section
+    });
 
-    return {
-        id: metadata.scriptId,
-        title: metadata.title,
-        metadata,
-        sections
-    };
+    return scriptObject;
 }
 
 /**
- * Serializes a script object back into a markdown string.
+ * Serializes a script object back into a Markdown string.
+ *
  * @param {object} scriptObject - The script object to serialize.
- * @returns {string} The markdown string.
+ * @param {object} [progress={}] - Optional progress data.
+ * @param {number} [progress.videoPercentage] - The video progress percentage.
+ * @param {number} [progress.audioPercentage] - The audio progress percentage.
+ * @returns {string} The Markdown string representation.
  */
-export function serializeToMarkdown(scriptObject) {
+export function serializeToMarkdown(scriptObject, progress = {}) {
     let md = '---\n';
     for (const key in scriptObject.metadata) {
         md += `${key}: "${scriptObject.metadata[key]}"\n`;
     }
+    // Add progress if provided
+    if (progress.videoPercentage !== undefined) md += `videoProgress: "${progress.videoPercentage}%"\n`;
+    if (progress.audioPercentage !== undefined) md += `audioProgress: "${progress.audioPercentage}%"\n`;
+    // Add current date on export
+    md += `exportDate: "${new Date().toISOString()}"\n`;
     md += '---\n\n';
 
     md += `# ${scriptObject.title}\n\n`;
 
     scriptObject.sections.forEach(section => {
         md += `## ${section.title}\n\n`;
+
         if (section.tasks && section.tasks.length > 0) {
-            md += serializeTable(section.tasks);
+            md += `| 录视频 | 配音 | 时间轴 | 画面内容 | 旁白/对话 | 备注 |\n`;
+            md += `| :---: | :---: | --- | --- | --- | --- |\n`;
+            section.tasks.forEach(task => {
+                const videoCheck = task.video ? '✓' : ' ';
+                const audioCheck = task.audio ? '✓' : ' ';
+                const videoStatus = task.video ? 'checked' : 'unchecked';
+                const audioStatus = task.audio ? 'checked' : 'unchecked';
+                const comment = `<!-- id:${task.id} video:${videoStatus} audio:${audioStatus} -->`;
+                md += `| ${videoCheck} | ${audioCheck} | ${comment}${task.timestamp} | ${task.content} | ${task.dialogue} | ${task.notes} |\n`;
+            });
+            md += '\n';
         }
-        if (section.chapters && section.chapters.length > 0) {
+
+        if (section.chapters) {
             section.chapters.forEach(chapter => {
                 md += `### ${chapter.title}\n\n`;
-                md += serializeTable(chapter.tasks);
+                if (chapter.tasks && chapter.tasks.length > 0) {
+                    md += `| 录视频 | 配音 | 时间轴 | 画面内容 | 旁白/对话 | 视觉引导/备注 |\n`;
+                    md += `| :---: | :---: | --- | --- | --- | --- |\n`;
+                    chapter.tasks.forEach(task => {
+                        const videoCheck = task.video ? '✓' : ' ';
+                        const audioCheck = task.audio ? '✓' : ' ';
+                        const videoStatus = task.video ? 'checked' : 'unchecked';
+                        const audioStatus = task.audio ? 'checked' : 'unchecked';
+                        const comment = `<!-- id:${task.id} video:${videoStatus} audio:${audioStatus} -->`;
+                        md += `| ${videoCheck} | ${audioCheck} | ${comment}${task.timestamp} | ${task.content} | ${task.dialogue} | ${task.notes} |\n`;
+                    });
+                    md += '\n';
+                }
             });
         }
     });
 
     return md;
-}
-
-function serializeTable(tasks) {
-    let tableMd = `| 录视频 | 配音 | 时间轴 | 画面内容 | 旁白/对话 | 备注 |\n`;
-    tableMd += `| :---: | :---: | --- | --- | --- | --- |\n`;
-    tasks.forEach(task => {
-        const video = task.video ? '✓' : ' ';
-        const audio = task.audio ? '✓' : ' ';
-        const videoStatus = task.video ? 'checked' : 'unchecked';
-        const audioStatus = task.audio ? 'checked' : 'unchecked';
-        const metadata = `<!-- id:${task.id} video:${videoStatus} audio:${audioStatus} -->`;
-        
-        const cells = [
-            video,
-            audio,
-            `${metadata}${task.timestamp}`,
-            task.content.replace(/\n/g, '<br>'),
-            task.dialogue.replace(/\n/g, '<br>'),
-            task.notes.replace(/\n/g, '<br>')
-        ].map(cell => cell.replace(/\|/g, '\\|'));
-
-        tableMd += `| ${cells.join(' | ')} |\n`;
-    });
-    return tableMd + '\n';
 }
