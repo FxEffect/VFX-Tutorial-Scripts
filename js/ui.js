@@ -361,7 +361,6 @@ function formatCellContent(html) {
                 const phraseSpan = document.createElement('span');
                 phraseSpan.className = 'tts-phrase';
                 phraseSpan.textContent = phrase;
-                phraseSpan.onclick = (event) => speakWord(phrase, event);
                 fragment.appendChild(phraseSpan);
             }
             lastIndex = offset + match.length;
@@ -377,7 +376,7 @@ function formatCellContent(html) {
 }
 
 // Text-to-speech function
-function speakWord(word, event) {
+export function speakWord(word, event) {
     event.stopPropagation();
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();

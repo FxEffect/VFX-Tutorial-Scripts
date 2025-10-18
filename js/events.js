@@ -63,6 +63,14 @@ export function initializeEventListeners(app) {
         }
     });
 
+    // Listener for clicking on text-to-speech phrases
+    scriptTablesContainer.addEventListener('click', (event) => {
+        const phraseSpan = event.target.closest('.tts-phrase');
+        if (phraseSpan) {
+            app.handleSpeakWord(phraseSpan.textContent, event);
+        }
+    });
+
     // Listener for collapsing/expanding script sections
     scriptTablesContainer.addEventListener('click', (event) => {
         const groupTitle = event.target.closest('.group-title');

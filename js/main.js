@@ -2,7 +2,7 @@
 
 import * as storage from './storage.js';
 import * as parser from './parser.js';
-import * as ui from './ui.js';
+import * as ui from './ui.js'; // Imports render functions, etc.
 import { initializeEventListeners } from './events.js';
 
 // --- State ---
@@ -193,6 +193,10 @@ const app = {
                 content.style.maxHeight = content.scrollHeight + 'px'; // Expand it
             }
         }
+    },
+
+    handleSpeakWord(word, event) {
+        ui.speakWord(word, event);
     },
 
     handleCellDblClick(cell) {
