@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 视频脚本管理器
 
 ## 1. 概述 (Overview)
@@ -8,7 +7,7 @@
 **核心功能:**
 *   **多脚本管理**: 在一个界面中管理所有脚本，通过右侧导航栏轻松切换。
 *   **Markdown 驱动**: 每个脚本都是一个独立的 `.md` 文件，易于在任何文本编辑器中查看和修改。
-*   **进度追踪**: (功能开发中) 自动计算和可视化每个脚本的制作和配音进度。
+*   **进度追踪**: 自动计算和可视化每个脚本的制作和配音进度。
 *   **数据持久化**: 所有导入的脚本都保存在浏览器本地，刷新页面不会丢失工作。
 *   **导入/导出**: 轻松导入符合规范的 `.md` 脚本文件，并能将当前进度导出保存。
 
@@ -16,24 +15,18 @@
 
 ## 2. 如何运行 (How to Run)
 
-**重要提示**: 由于浏览器对 JavaScript 模块的 CORS 安全策略限制，您不能再直接通过双击 `index.html` 文件来运行本项目。
+**在线访问 (推荐)**
 
-您必须通过一个本地 Web 服务器来访问 `index.html`。
+直接访问 GitHub Pages 部署的地址： https://FxEffect.github.io/VFX-Tutorial-Scripts/
 
-**推荐方式: VS Code Live Server**
+**本地运行**
+
+由于浏览器的安全策略，您不能直接通过双击 `index.html` 文件来运行。您必须通过一个本地 Web 服务器来访问。最简单的方式是使用 VS Code 的 `Live Server` 插件。
 
 1.  在 VS Code 编辑器中，安装 [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) 插件。
 2.  安装后，在 VS Code 的文件浏览器中右键点击 `index.html` 文件。
 3.  选择 `Open with Live Server`。
 4.  浏览器将自动打开并访问正确的地址 (通常是 `http://127.0.0.1:5500/index.html`)。
-
-**备选方式: Python 本地服务器**
-
-如果您的电脑安装了 Python，也可以使用其内置的 http 服务器：
-
-1.  在项目根目录 (`VFX Tutorial Scripts`) 打开您的命令行工具。
-2.  运行命令: `python -m http.server`
-3.  在浏览器中手动访问地址: `http://localhost:8000`
 
 ---
 
