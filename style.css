@@ -173,3 +173,24 @@
         .script-item.active .script-id {
             color: #1d4ed8; /* blue-700 */
         }
+
+        /* Icon Masking for Copyright Footer */
+        .icon-mask {
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            background-color: #9ca3af; /* gray-400 */
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .icon-bilibili {
+            -webkit-mask-image: url('ico/B.png');
+            mask-image: url('ico/B.png');
+        }
+
+        a.icon-bilibili:hover {
+            background-color: #3b82f6; /* blue-500 */
+        }

@@ -280,6 +280,8 @@ const app = {
     handleUpdateScriptProperties() {
         const originalId = document.getElementById('edit-original-script-id').value;
         const newTitle = document.getElementById('edit-title').value.trim();
+        const newAuthor = document.getElementById('edit-author').value.trim();
+        const newStatus = document.getElementById('edit-status').value;
 
         const type = document.getElementById('edit-id-type').value;
         const number = document.getElementById('edit-id-number').value;
@@ -298,8 +300,12 @@ const app = {
         }
 
         const scriptData = allScripts[originalId];
+        
+        // Update main properties and metadata
         scriptData.title = newTitle;
         scriptData.metadata.title = newTitle;
+        scriptData.metadata.author = newAuthor;
+        scriptData.metadata.status = newStatus;
 
         if (newId !== originalId) {
             scriptData.id = newId;

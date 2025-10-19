@@ -14,9 +14,13 @@ const editModal = document.getElementById('edit-modal');
 const editForm = document.getElementById('edit-form');
 const editOriginalScriptId = document.getElementById('edit-original-script-id');
 const editTitle = document.getElementById('edit-title');
+const editAuthor = document.getElementById('edit-author');
+const editStatus = document.getElementById('edit-status');
 const editIdType = document.getElementById('edit-id-type');
 const editIdNumber = document.getElementById('edit-id-number');
 const editIdVersion = document.getElementById('edit-id-version');
+const infoDuration = document.getElementById('info-duration');
+const infoExportDate = document.getElementById('info-export-date');
 
 
 // --- Public Functions ---
@@ -80,14 +84,15 @@ export function renderScriptList(scripts, activeScriptId) {
  * @param {object} script - The script object to edit.
  */
 export function showEditModal(script) {
+    // --- Populate Editable Fields ---
     editOriginalScriptId.value = script.id;
-    editTitle.value = script.title;
+    editTitle.value = script.title || '';
+    editAuthor.value = script.metadata.author || '';
+    editStatus.value = script.metadata.status || 'Draft';
 
-    // Parse script.id to populate the structured fields
-    // Example IDs: free-1-v1, paid-10-v2
+    // --- Parse and Populate Script ID ---
     const idParts = script.id.split('-');
     let type = 'free', number = '1', version = '1'; // Defaults
-
     if (idParts.length === 3) {
         type = idParts[0];
         number = idParts[1];
@@ -96,22 +101,35 @@ export function showEditModal(script) {
         type = idParts[0];
         number = idParts[1];
     } else if (idParts.length === 1 && idParts[0] !== '') {
-        // Handle cases where the ID is just a number or a single word
         const isNumeric = /^\d+$/.test(idParts[0]);
-        if (isNumeric) {
-            number = idParts[0];
-        } else {
-            type = idParts[0];
-        }
+        if (isNumeric) number = idParts[0];
+        else type = idParts[0];
     }
-
-
     editIdType.value = type;
     editIdNumber.value = number;
     editIdVersion.value = version;
 
+    // --- Populate Read-only Info ---
+    infoDuration.textContent = _calculateEstimatedDuration(script);
+    if (script.metadata.exportDate) {
+        try {
+            infoExportDate.textContent = new Date(script.metadata.exportDate).toLocaleString();
+        } catch (e) {
+            infoExportDate.textContent = script.metadata.exportDate;
+        }
+    } else {
+        infoExportDate.textContent = 'N/A';
+    }
+
+    // --- Show Modal ---
     editModal.classList.remove('hidden');
+    // Reset panel position in case it was dragged
+    const modalPanel = document.getElementById('edit-modal-panel');
+    modalPanel.style.top = '';
+    modalPanel.style.left = '';
+    modalPanel.style.position = 'relative';
 }
+
 
 /**
  * Hides the edit modal and resets the form.
@@ -234,6 +252,33 @@ export function makeCellEditable(cell, onSave) {
 
 
 // --- Helper Functions for Rendering ---
+
+function _calculateEstimatedDuration(script) {
+    let maxSeconds = 0;
+    const allTasks = (script.sections || []).flatMap(s => (s.tasks || []).concat((s.chapters || []).flatMap(c => c.tasks || [])));
+
+    allTasks.forEach(task => {
+        const ts = task.timestamp.trim();
+        if (!ts) return;
+
+        const parts = ts.split(':').map(Number);
+        let seconds = 0;
+        if (parts.length === 2) { // M:SS
+            seconds = parts[0] * 60 + parts[1];
+        } else if (parts.length === 3) { // H:MM:SS
+            seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+        if (seconds > maxSeconds) {
+            maxSeconds = seconds;
+        }
+    });
+
+    if (maxSeconds === 0) return 'N/A';
+
+    const minutes = Math.floor(maxSeconds / 60);
+    const seconds = maxSeconds % 60;
+    return `${minutes}分${seconds.toString().padStart(2, '0')}秒`;
+}
 
 function createSectionElement(section) {
     const card = document.createElement('div');

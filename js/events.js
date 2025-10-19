@@ -122,4 +122,44 @@ export function initializeEventListeners(app) {
             }
         }
     });
+
+    makeModalDraggable();
+}
+
+function makeModalDraggable() {
+    const modalPanel = document.getElementById('edit-modal-panel');
+    const modalHeader = document.getElementById('modal-header');
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    modalHeader.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        // Ensure the panel is positioned absolutely to allow dragging
+        modalPanel.style.position = 'absolute';
+
+        // Calculate offset from the top-left corner of the panel
+        offsetX = e.clientX - modalPanel.getBoundingClientRect().left;
+        offsetY = e.clientY - modalPanel.getBoundingClientRect().top;
+
+        modalHeader.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+
+        // Calculate new position
+        const newX = e.clientX - offsetX;
+        const newY = e.clientY - offsetY;
+
+        modalPanel.style.left = `${newX}px`;
+        modalPanel.style.top = `${newY}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            modalHeader.style.cursor = 'move';
+        }
+    });
 }

@@ -130,14 +130,28 @@ export function parseMarkdown(markdownContent) {
  */
 export function serializeToMarkdown(scriptObject, progress = {}) {
     let md = '---\n';
-    for (const key in scriptObject.metadata) {
-        md += `${key}: "${scriptObject.metadata[key]}"\n`;
+    
+    // Create a temporary metadata object to hold all final values.
+    const finalMetadata = { ...scriptObject.metadata };
+
+    // Add/update progress if provided
+    if (progress.videoPercentage !== undefined) {
+        finalMetadata.videoProgress = `${progress.videoPercentage}%`;
     }
-    // Add progress if provided
-    if (progress.videoPercentage !== undefined) md += `videoProgress: "${progress.videoPercentage}%"\n`;
-    if (progress.audioPercentage !== undefined) md += `audioProgress: "${progress.audioPercentage}%"\n`;
-    // Add current date on export
-    md += `exportDate: "${new Date().toISOString()}"\n`;
+    if (progress.audioPercentage !== undefined) {
+        finalMetadata.audioProgress = `${progress.audioPercentage}%`;
+    }
+    // Add/update current date on export
+    finalMetadata.exportDate = new Date().toISOString();
+
+    // Serialize all metadata.
+    for (const key in finalMetadata) {
+        // Ensure essential keys are not empty
+        if ((key === 'scriptId' || key === 'title') && !finalMetadata[key]) {
+            continue;
+        }
+        md += `${key}: "${finalMetadata[key]}"\n`;
+    }
     md += '---\n\n';
 
     md += `# ${scriptObject.title}\n\n`;
