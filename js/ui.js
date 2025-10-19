@@ -35,6 +35,13 @@ export function showScriptContent() {
     scriptContentWrapper.classList.remove('hidden');
 }
 
+function createTagElement(text, className) {
+    const tag = document.createElement('span');
+    tag.className = className;
+    tag.textContent = text;
+    return tag;
+}
+
 /**
  * Renders the list of scripts in the sidebar.
  * @param {object} scripts - The database of all scripts.
@@ -53,23 +60,39 @@ export function renderScriptList(scripts, activeScriptId, calculateScriptProgres
         const li = document.createElement('li');
         li.className = `script-item flex justify-between items-center ${scriptId === activeScriptId ? 'active' : ''}`;
         
-        // Main clickable area for script selection
         const mainArea = document.createElement('div');
         mainArea.className = 'flex-1 overflow-hidden cursor-pointer p-2';
-        mainArea.dataset.scriptId = scriptId; // For selection
+        mainArea.dataset.scriptId = scriptId;
         
         const title = document.createElement('h3');
         title.className = 'font-bold truncate';
         title.textContent = script.title;
-        
-        const idPara = document.createElement('p');
-        idPara.className = 'script-id truncate';
-        idPara.textContent = script.id;
-
         mainArea.appendChild(title);
-        mainArea.appendChild(idPara);
 
-        // Add progress bar if the calculation function is provided
+        // Create and append tags
+        const tagsContainer = document.createElement('div');
+        tagsContainer.className = 'script-tags-container';
+        
+        // Status Tag
+        const status = script.metadata.status || 'Draft';
+        const statusClass = `tag-status-${status.toLowerCase().replace(' ', '-')}`;
+        tagsContainer.appendChild(createTagElement(status, `script-tag ${statusClass}`))
+
+        // ID Tags
+        const idParts = script.id.split('-');
+        if (idParts.length === 4 && idParts[1] === 'lesson') {
+            tagsContainer.appendChild(createTagElement(idParts[0], 'script-tag tag-id-type'));
+            tagsContainer.appendChild(createTagElement(idParts[2], 'script-tag tag-id-number'));
+            tagsContainer.appendChild(createTagElement(idParts[3], 'script-tag tag-id-version'));
+        } else if (idParts.length === 3) { // Fallback for old format
+            tagsContainer.appendChild(createTagElement(idParts[0], 'script-tag tag-id-type'));
+            tagsContainer.appendChild(createTagElement(idParts[1], 'script-tag tag-id-number'));
+            tagsContainer.appendChild(createTagElement(idParts[2], 'script-tag tag-id-version'));
+        }
+
+        mainArea.appendChild(tagsContainer);
+
+        // Progress Bar
         if (calculateScriptProgress) {
             const { videoPercentage, audioPercentage } = calculateScriptProgress(script);
             const avgProgress = (videoPercentage + audioPercentage) / 2;
@@ -78,17 +101,11 @@ export function renderScriptList(scripts, activeScriptId, calculateScriptProgres
             progressWrapper.className = 'sidebar-progress-bar-wrapper';
             
             const progressBar = document.createElement('div');
-            
             let progressColorClass = '';
-            if (avgProgress <= 30) {
-                progressColorClass = 'progress-tier-1';
-            } else if (avgProgress <= 60) {
-                progressColorClass = 'progress-tier-2';
-            } else if (avgProgress < 100) {
-                progressColorClass = 'progress-tier-3';
-            } else { // 100%
-                progressColorClass = 'progress-tier-4';
-            }
+            if (avgProgress <= 30) progressColorClass = 'progress-tier-1';
+            else if (avgProgress <= 60) progressColorClass = 'progress-tier-2';
+            else if (avgProgress < 100) progressColorClass = 'progress-tier-3';
+            else progressColorClass = 'progress-tier-4';
 
             progressBar.className = `sidebar-progress-bar ${progressColorClass}`;
             progressBar.style.width = `${avgProgress}%`;
@@ -99,7 +116,7 @@ export function renderScriptList(scripts, activeScriptId, calculateScriptProgres
 
         const editButton = document.createElement('button');
         editButton.className = 'edit-script-button flex-shrink-0 ml-2 p-2 text-gray-400 hover:text-blue-600 rounded-full';
-        editButton.dataset.editScriptId = scriptId; // For editing
+        editButton.dataset.editScriptId = scriptId;
         editButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>`;
 
         li.appendChild(mainArea);

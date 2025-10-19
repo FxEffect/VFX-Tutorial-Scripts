@@ -165,13 +165,50 @@
             font-weight: 600;
         }
 
-        .script-item .script-id {
-            font-size: 0.875rem;
+        .script-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-top: 0.25rem;
+        }
+
+        .script-tag {
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* Status Tag Colors */
+        .tag-status-draft {
+            background-color: #e5e7eb; /* gray-200 */
+            color: #4b5563; /* gray-700 */
+        }
+        .tag-status-in-progress {
+            background-color: #dbeafe; /* blue-100 */
+            color: #1e40af; /* blue-800 */
+        }
+        .tag-status-review {
+            background-color: #fef3c7; /* amber-100 */
+            color: #92400e; /* amber-800 */
+        }
+        .tag-status-completed {
+            background-color: #dcfce7; /* green-100 */
+            color: #166534; /* green-800 */
+        }
+
+        /* ID Tag Colors */
+        .tag-id-type, .tag-id-number, .tag-id-version {
+            background-color: #f3f4f6; /* gray-100 */
             color: #6b7280; /* gray-500 */
         }
 
-        .script-item.active .script-id {
-            color: #1d4ed8; /* blue-700 */
+        .script-item.active .tag-id-type,
+        .script-item.active .tag-id-number,
+        .script-item.active .tag-id-version {
+            background-color: #c7d2fe; /* indigo-200 */
+            color: #3730a3; /* indigo-800 */
         }
 
         /* Icon Masking for Copyright Footer */
