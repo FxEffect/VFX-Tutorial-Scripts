@@ -264,6 +264,65 @@ const app = {
             activeScriptId = null;
             init(); // Re-initialize the app state
         }
+    },
+
+    handleEditScript(scriptId) {
+        const script = allScripts[scriptId];
+        if (script) {
+            ui.showEditModal(script);
+        }
+    },
+
+    handleCancelEdit() {
+        ui.hideEditModal();
+    },
+
+    handleUpdateScriptProperties() {
+        const originalId = document.getElementById('edit-original-script-id').value;
+        const newTitle = document.getElementById('edit-title').value.trim();
+
+        const type = document.getElementById('edit-id-type').value;
+        const number = document.getElementById('edit-id-number').value;
+        const version = document.getElementById('edit-id-version').value;
+
+        if (!newTitle || !number || !version) {
+            alert('标题、编号和版本号不能为空。');
+            return;
+        }
+
+        const newId = `${type}-${number}-v${version}`;
+
+        if (newId !== originalId && allScripts[newId]) {
+            alert(`错误：脚本ID "${newId}" 已存在。请选择一个唯一的ID。`);
+            return;
+        }
+
+        const scriptData = allScripts[originalId];
+        scriptData.title = newTitle;
+        scriptData.metadata.title = newTitle;
+
+        if (newId !== originalId) {
+            scriptData.id = newId;
+            scriptData.metadata.scriptId = newId;
+            
+            // The key of the script in the main object needs to change
+            delete Object.assign(allScripts, {[newId]: allScripts[originalId] })[originalId];
+
+            // If the active script was the one being edited, update the active ID
+            if (activeScriptId === originalId) {
+                activeScriptId = newId;
+                window.location.hash = newId;
+            }
+        }
+
+        storage.saveAllScripts(allScripts);
+        ui.hideEditModal();
+        ui.renderScriptList(allScripts, activeScriptId);
+
+        // If the active script was edited, reload its content to show the new title
+        if (activeScriptId === newId) {
+            ui.renderScriptContent(scriptData);
+        }
     }
 };
 

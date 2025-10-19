@@ -8,11 +8,39 @@ export function initializeEventListeners(app) {
     // Sidebar script list clicks
     const scriptListContainer = document.getElementById('script-list-container');
     scriptListContainer.addEventListener('click', (event) => {
-        const scriptItem = event.target.closest('.script-item');
-        if (scriptItem && scriptItem.dataset.scriptId) {
-            app.handleScriptSelect(scriptItem.dataset.scriptId);
+        const selectArea = event.target.closest('[data-script-id]');
+        const editButton = event.target.closest('.edit-script-button');
+
+        if (editButton) {
+            event.stopPropagation();
+            app.handleEditScript(editButton.dataset.editScriptId);
+            return;
+        }
+        if (selectArea) {
+            app.handleScriptSelect(selectArea.dataset.scriptId);
         }
     });
+
+    // Modal Buttons and Overlay
+    const editModal = document.getElementById('edit-modal');
+    const editSaveButton = document.getElementById('edit-save-button');
+    const editCancelButton = document.getElementById('edit-cancel-button');
+
+    editSaveButton.addEventListener('click', () => {
+        app.handleUpdateScriptProperties();
+    });
+
+    editCancelButton.addEventListener('click', () => {
+        app.handleCancelEdit();
+    });
+
+    // Close modal if background is clicked
+    editModal.addEventListener('click', (event) => {
+        if (event.target === editModal) {
+            app.handleCancelEdit();
+        }
+    });
+
 
     // Action Buttons
     const importButton = document.getElementById('import-button');

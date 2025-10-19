@@ -10,6 +10,13 @@ const progressTextVideo = document.getElementById('progress-text-video');
 const progressBarAudio = document.getElementById('progress-bar-audio');
 const progressTextAudio = document.getElementById('progress-text-audio');
 const scriptTablesContainer = document.getElementById('script-tables-container');
+const editModal = document.getElementById('edit-modal');
+const editForm = document.getElementById('edit-form');
+const editOriginalScriptId = document.getElementById('edit-original-script-id');
+const editTitle = document.getElementById('edit-title');
+const editIdType = document.getElementById('edit-id-type');
+const editIdNumber = document.getElementById('edit-id-number');
+const editIdVersion = document.getElementById('edit-id-version');
 
 
 // --- Public Functions ---
@@ -39,22 +46,83 @@ export function renderScriptList(scripts, activeScriptId) {
     for (const scriptId in scripts) {
         const script = scripts[scriptId];
         const li = document.createElement('li');
-        li.className = `script-item ${scriptId === activeScriptId ? 'active' : ''}`;
-        li.dataset.scriptId = scriptId;
+        li.className = `script-item flex justify-between items-center ${scriptId === activeScriptId ? 'active' : ''}`;
+        
+        // Main clickable area for script selection
+        const mainArea = document.createElement('div');
+        mainArea.className = 'flex-1 overflow-hidden cursor-pointer p-2';
+        mainArea.dataset.scriptId = scriptId; // For selection
         
         const title = document.createElement('h3');
-        title.className = 'font-bold';
+        title.className = 'font-bold truncate';
         title.textContent = script.title;
         
         const idPara = document.createElement('p');
-        idPara.className = 'script-id';
+        idPara.className = 'script-id truncate';
         idPara.textContent = script.id;
 
-        li.appendChild(title);
-        li.appendChild(idPara);
+        mainArea.appendChild(title);
+        mainArea.appendChild(idPara);
+
+        const editButton = document.createElement('button');
+        editButton.className = 'edit-script-button flex-shrink-0 ml-2 p-2 text-gray-400 hover:text-blue-600 rounded-full';
+        editButton.dataset.editScriptId = scriptId; // For editing
+        editButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>`;
+
+        li.appendChild(mainArea);
+        li.appendChild(editButton);
         scriptListContainer.appendChild(li);
     }
 }
+
+/**
+ * Shows and populates the edit modal with script data.
+ * @param {object} script - The script object to edit.
+ */
+export function showEditModal(script) {
+    editOriginalScriptId.value = script.id;
+    editTitle.value = script.title;
+
+    // Parse script.id to populate the structured fields
+    // Example IDs: free-1-v1, paid-10-v2
+    const idParts = script.id.split('-');
+    let type = 'free', number = '1', version = '1'; // Defaults
+
+    if (idParts.length === 3) {
+        type = idParts[0];
+        number = idParts[1];
+        version = idParts[2].replace('v', '');
+    } else if (idParts.length === 2) {
+        type = idParts[0];
+        number = idParts[1];
+    } else if (idParts.length === 1 && idParts[0] !== '') {
+        // Handle cases where the ID is just a number or a single word
+        const isNumeric = /^\d+$/.test(idParts[0]);
+        if (isNumeric) {
+            number = idParts[0];
+        } else {
+            type = idParts[0];
+        }
+    }
+
+
+    editIdType.value = type;
+    editIdNumber.value = number;
+    editIdVersion.value = version;
+
+    editModal.classList.remove('hidden');
+}
+
+/**
+ * Hides the edit modal and resets the form.
+ */
+export function hideEditModal() {
+    editModal.classList.add('hidden');
+    if(editForm) {
+        editForm.reset();
+    }
+}
+
 
 /**
  * Renders the content of a single script in the main view.
