@@ -194,3 +194,25 @@
         a.icon-bilibili:hover {
             background-color: #3b82f6; /* blue-500 */
         }
+
+        /* Sidebar Progress Bar */
+        .sidebar-progress-bar-wrapper {
+            margin-top: 0.5rem;
+            height: 6px;
+            width: 100%;
+            background-color: #e5e7eb; /* gray-200 */
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .sidebar-progress-bar {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+        }
+
+        /* Color Tiers */
+        .progress-tier-1 { background-color: #f97316; } /* orange-500 */
+        .progress-tier-2 { background-color: #facc15; } /* yellow-400 */
+        .progress-tier-3 { background-color: #3b82f6; } /* blue-500 */
+        .progress-tier-4 { background-color: #22c55e; } /* green-500 */

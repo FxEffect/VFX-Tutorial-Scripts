@@ -12,22 +12,19 @@ let activeScriptId = null;
 // --- Core Functions ---
 
 /**
- * Calculates and updates the progress for the active script, then saves all data.
+ * Calculates the progress for a given script object.
+ * @param {object} script - The script object.
+ * @returns {{videoPercentage: number, audioPercentage: number}}
  */
-function updateAndSaveProgress() {
-    if (!activeScriptId) return;
-
-    const script = allScripts[activeScriptId];
+function calculateScriptProgress(script) {
     if (!script || !script.sections) {
-        ui.updateProgress(0, 0);
-        return;
+        return { videoPercentage: 0, audioPercentage: 0 };
     }
 
     const allTasks = script.sections.flatMap(s => (s.tasks || []).concat((s.chapters || []).flatMap(c => c.tasks || [])));
     
     if (allTasks.length === 0) {
-        ui.updateProgress(0, 0);
-        return;
+        return { videoPercentage: 0, audioPercentage: 0 };
     }
 
     const completedVideoTasks = allTasks.filter(t => t.video).length;
@@ -36,8 +33,24 @@ function updateAndSaveProgress() {
     const completedAudioTasks = allTasks.filter(t => t.audio).length;
     const audioPercentage = Math.round((completedAudioTasks / allTasks.length) * 100);
 
+    return { videoPercentage, audioPercentage };
+}
+
+/**
+ * Calculates and updates the progress for the active script, then saves all data.
+ */
+function updateAndSaveProgress() {
+    if (!activeScriptId) return;
+
+    const script = allScripts[activeScriptId];
+    const { videoPercentage, audioPercentage } = calculateScriptProgress(script);
+
     ui.updateProgress(videoPercentage, audioPercentage);
     ui.updateGroupCompletionStyles(); // Update title styles (green text, checkmark)
+    
+    // Also re-render the script list to update its progress bar
+    ui.renderScriptList(allScripts, activeScriptId, calculateScriptProgress);
+
     storage.saveAllScripts(allScripts);
 }
 
@@ -58,7 +71,7 @@ function loadScript(scriptId) {
     const scriptObject = allScripts[scriptId];
     
     ui.renderScriptContent(scriptObject);
-    ui.renderScriptList(allScripts, activeScriptId); // Re-render list to update active state
+    ui.renderScriptList(allScripts, activeScriptId, calculateScriptProgress); // Re-render list to update active state
     ui.showScriptContent();
     ui.updateGroupCompletionStyles(); // Initial check for title styles
     updateAndSaveProgress(); // Update progress bar for the newly loaded script
@@ -292,10 +305,10 @@ const app = {
             return;
         }
 
-        const newId = `${type}-${number}-v${version}`;
+        const newId = `${type}-lesson-${number}-v${version}`;
 
         if (newId !== originalId && allScripts[newId]) {
-            alert(`错误：脚本ID "${newId}" 已存在。请选择一个唯一的ID。`);
+            alert(`错误：脚本ID \"${newId}\" 已存在。请选择一个唯一的ID。`);
             return;
         }
 
@@ -323,7 +336,7 @@ const app = {
 
         storage.saveAllScripts(allScripts);
         ui.hideEditModal();
-        ui.renderScriptList(allScripts, activeScriptId);
+        ui.renderScriptList(allScripts, activeScriptId, calculateScriptProgress);
 
         // If the active script was edited, reload its content to show the new title
         if (activeScriptId === newId) {
@@ -371,7 +384,7 @@ function init() {
         if (firstScriptId) {
             loadScript(firstScriptId);
         } else {
-            ui.renderScriptList({});
+            ui.renderScriptList({}, null, calculateScriptProgress);
             ui.showWelcomeMessage();
         }
     }

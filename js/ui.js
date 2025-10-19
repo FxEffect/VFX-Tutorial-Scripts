@@ -39,8 +39,9 @@ export function showScriptContent() {
  * Renders the list of scripts in the sidebar.
  * @param {object} scripts - The database of all scripts.
  * @param {string} activeScriptId - The ID of the currently active script.
+ * @param {function} calculateScriptProgress - Function to calculate progress for a script.
  */
-export function renderScriptList(scripts, activeScriptId) {
+export function renderScriptList(scripts, activeScriptId, calculateScriptProgress) {
     scriptListContainer.innerHTML = ''; // Clear existing list
     if (Object.keys(scripts).length === 0) {
         scriptListContainer.innerHTML = '<li class="text-center text-gray-500 p-4">尚未导入任何脚本</li>';
@@ -68,6 +69,34 @@ export function renderScriptList(scripts, activeScriptId) {
         mainArea.appendChild(title);
         mainArea.appendChild(idPara);
 
+        // Add progress bar if the calculation function is provided
+        if (calculateScriptProgress) {
+            const { videoPercentage, audioPercentage } = calculateScriptProgress(script);
+            const avgProgress = (videoPercentage + audioPercentage) / 2;
+
+            const progressWrapper = document.createElement('div');
+            progressWrapper.className = 'sidebar-progress-bar-wrapper';
+            
+            const progressBar = document.createElement('div');
+            
+            let progressColorClass = '';
+            if (avgProgress <= 30) {
+                progressColorClass = 'progress-tier-1';
+            } else if (avgProgress <= 60) {
+                progressColorClass = 'progress-tier-2';
+            } else if (avgProgress < 100) {
+                progressColorClass = 'progress-tier-3';
+            } else { // 100%
+                progressColorClass = 'progress-tier-4';
+            }
+
+            progressBar.className = `sidebar-progress-bar ${progressColorClass}`;
+            progressBar.style.width = `${avgProgress}%`;
+            
+            progressWrapper.appendChild(progressBar);
+            mainArea.appendChild(progressWrapper);
+        }
+
         const editButton = document.createElement('button');
         editButton.className = 'edit-script-button flex-shrink-0 ml-2 p-2 text-gray-400 hover:text-blue-600 rounded-full';
         editButton.dataset.editScriptId = scriptId; // For editing
@@ -93,7 +122,15 @@ export function showEditModal(script) {
     // --- Parse and Populate Script ID ---
     const idParts = script.id.split('-');
     let type = 'free', number = '1', version = '1'; // Defaults
-    if (idParts.length === 3) {
+
+    // Handle new format: free-lesson-2-v1
+    if (idParts.length === 4 && idParts[1] === 'lesson') {
+        type = idParts[0];
+        number = idParts[2];
+        version = idParts[3].replace('v', '');
+    } 
+    // Handle old format: free-2-v1
+    else if (idParts.length === 3) {
         type = idParts[0];
         number = idParts[1];
         version = idParts[2].replace('v', '');
@@ -105,6 +142,7 @@ export function showEditModal(script) {
         if (isNumeric) number = idParts[0];
         else type = idParts[0];
     }
+    
     editIdType.value = type;
     editIdNumber.value = number;
     editIdVersion.value = version;
