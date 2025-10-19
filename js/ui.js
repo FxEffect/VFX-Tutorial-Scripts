@@ -55,6 +55,15 @@ export function renderScriptList(scripts, activeScriptId, calculateScriptProgres
         return;
     }
 
+    const translationMap = {
+        'Draft': '草稿',
+        'In Progress': '进行中',
+        'Review': '待审核',
+        'Completed': '已完成',
+        'free': '免费',
+        'paid': '付费'
+    };
+
     for (const scriptId in scripts) {
         const script = scripts[scriptId];
         const li = document.createElement('li');
@@ -76,16 +85,19 @@ export function renderScriptList(scripts, activeScriptId, calculateScriptProgres
         // Status Tag
         const status = script.metadata.status || 'Draft';
         const statusClass = `tag-status-${status.toLowerCase().replace(' ', '-')}`;
-        tagsContainer.appendChild(createTagElement(status, `script-tag ${statusClass}`))
+        const statusText = translationMap[status] || status;
+        tagsContainer.appendChild(createTagElement(statusText, `script-tag ${statusClass}`))
 
         // ID Tags
         const idParts = script.id.split('-');
         if (idParts.length === 4 && idParts[1] === 'lesson') {
-            tagsContainer.appendChild(createTagElement(idParts[0], 'script-tag tag-id-type'));
+            const typeText = translationMap[idParts[0]] || idParts[0];
+            tagsContainer.appendChild(createTagElement(typeText, 'script-tag tag-id-type'));
             tagsContainer.appendChild(createTagElement(idParts[2], 'script-tag tag-id-number'));
             tagsContainer.appendChild(createTagElement(idParts[3], 'script-tag tag-id-version'));
         } else if (idParts.length === 3) { // Fallback for old format
-            tagsContainer.appendChild(createTagElement(idParts[0], 'script-tag tag-id-type'));
+            const typeText = translationMap[idParts[0]] || idParts[0];
+            tagsContainer.appendChild(createTagElement(typeText, 'script-tag tag-id-type'));
             tagsContainer.appendChild(createTagElement(idParts[1], 'script-tag tag-id-number'));
             tagsContainer.appendChild(createTagElement(idParts[2], 'script-tag tag-id-version'));
         }
