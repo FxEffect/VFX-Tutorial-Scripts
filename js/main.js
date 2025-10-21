@@ -94,32 +94,10 @@ const app = {
         const isChecked = checkbox.checked;
 
         const script = allScripts[activeScriptId];
-        let taskFound = false;
+        const task = findTaskById(script, taskId);
 
-        for (const section of script.sections) {
-            if (taskFound) break;
-            let tasks = section.tasks || [];
-            let task = tasks.find(t => t.id === taskId);
-            if (task) {
-                task[taskType] = isChecked;
-                taskFound = true;
-                break;
-            }
-
-            if (section.chapters) {
-                for (const chapter of section.chapters) {
-                    let chapterTasks = chapter.tasks || [];
-                    let task = chapterTasks.find(t => t.id === taskId);
-                    if (task) {
-                        task[taskType] = isChecked;
-                        taskFound = true;
-                        break;
-                    }
-                }
-            }
-        }
-        
-        if(taskFound) {
+        if (task) {
+            task[taskType] = isChecked;
             updateAndSaveProgress();
         }
     },
@@ -185,17 +163,7 @@ const app = {
         if (!propertyToEdit) return;
 
         const script = allScripts[activeScriptId];
-        let taskToEdit = null;
-
-        // Find the task to edit
-        for (const section of script.sections) {
-            let task = (section.tasks || []).find(t => t.id === taskId) || 
-                       (section.chapters || []).flatMap(c => c.tasks || []).find(t => t.id === taskId);
-            if (task) {
-                taskToEdit = task;
-                break;
-            }
-        }
+        const taskToEdit = findTaskById(script, taskId);
 
         if (taskToEdit) {
             ui.makeCellEditable(cell, (newHtml) => {
@@ -342,10 +310,115 @@ const app = {
         if (activeScriptId === newId) {
             ui.renderScriptContent(scriptData);
         }
+    },
+
+    handleInsertRow(taskId) {
+        if (!activeScriptId) return;
+        const script = allScripts[activeScriptId];
+
+        const context = findTaskAndContext(script, taskId);
+
+        if (context) {
+            const newTask = {
+                id: `new-task-${Date.now()}`,
+                video: false,
+                audio: false,
+                timestamp: '',
+                content: '',
+                dialogue: '',
+                notes: ''
+            };
+            
+            context.tasksArray.splice(context.taskIndex + 1, 0, newTask);
+            regenerateTaskIds(script);
+            loadScript(activeScriptId); // This will re-render and save
+        } else {
+            console.warn(`Task with ID ${taskId} not found for insertion.`);
+        }
+    },
+
+    handleDeleteRow(taskId) {
+        if (!activeScriptId) return;
+        const script = allScripts[activeScriptId];
+
+        const context = findTaskAndContext(script, taskId);
+
+        if (context) {
+            context.tasksArray.splice(context.taskIndex, 1);
+            regenerateTaskIds(script);
+            loadScript(activeScriptId); // This will re-render and save
+        } else {
+            console.warn(`Task with ID ${taskId} not found for deletion.`);
+        }
     }
 };
 
 // --- Helper Functions ---
+
+/**
+ * Finds a task and its context (the array it lives in and its index) by its ID.
+ * @param {object} script - The script object.
+ * @param {string} taskId - The ID of the task to find.
+ * @returns {{tasksArray: Array, taskIndex: number}|null} An object with the array and index, or null if not found.
+ */
+function findTaskAndContext(script, taskId) {
+    if (!script || !script.sections) return null;
+
+    for (const section of script.sections) {
+        if (section.tasks) {
+            const taskIndex = section.tasks.findIndex(t => t.id === taskId);
+            if (taskIndex !== -1) {
+                return { tasksArray: section.tasks, taskIndex };
+            }
+        }
+
+        if (section.chapters) {
+            for (const chapter of section.chapters) {
+                if (chapter.tasks) {
+                    const taskIndex = chapter.tasks.findIndex(t => t.id === taskId);
+                    if (taskIndex !== -1) {
+                        return { tasksArray: chapter.tasks, taskIndex };
+                    }
+                }
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * Regenerates all task IDs in a script to ensure they are unique and sequential.
+ * This is crucial after adding or deleting rows.
+ * @param {object} script - The script object to process.
+ */
+function regenerateTaskIds(script) {
+    let sectionIndex = 0;
+    for (const section of script.sections) {
+        let taskIndex = 0;
+        if (section.tasks) {
+            for (const task of section.tasks) {
+                // The '3' is arbitrary but consistent with the parser guide's example format.
+                task.id = `editable-${sectionIndex}-task-${taskIndex}-3`;
+                taskIndex++;
+            }
+        }
+        if (section.chapters) {
+            let chapterIndex = 0;
+            for (const chapter of section.chapters) {
+                let chapterTaskIndex = 0;
+                if (chapter.tasks) {
+                    for (const task of chapter.tasks) {
+                        task.id = `editable-${sectionIndex}-chapter-${chapterIndex}-task-${chapterTaskIndex}-3`;
+                        chapterTaskIndex++;
+                    }
+                }
+                chapterIndex++;
+            }
+        }
+        sectionIndex++;
+    }
+}
+
 
 /**
  * Finds a task by its ID within a script object.
@@ -379,11 +452,13 @@ function init() {
     
     if (allScripts[scriptIdFromUrl]) {
         loadScript(scriptIdFromUrl);
-    } else {
+    }
+    else {
         const firstScriptId = Object.keys(allScripts)[0];
         if (firstScriptId) {
             loadScript(firstScriptId);
-        } else {
+        }
+        else {
             ui.renderScriptList({}, null, calculateScriptProgress);
             ui.showWelcomeMessage();
         }

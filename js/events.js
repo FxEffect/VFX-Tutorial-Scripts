@@ -91,35 +91,43 @@ export function initializeEventListeners(app) {
         }
     });
 
-    // Listener for clicking on text-to-speech phrases
+    // Listener for all clicks within the script content area
     scriptTablesContainer.addEventListener('click', (event) => {
         const phraseSpan = event.target.closest('.tts-phrase');
-        if (phraseSpan) {
-            app.handleSpeakWord(phraseSpan.textContent, event);
-        }
-    });
-
-    // Listener for collapsing/expanding script sections
-    scriptTablesContainer.addEventListener('click', (event) => {
+        const actionButton = event.target.closest('.action-btn');
         const groupTitle = event.target.closest('.group-title');
         const header = event.target.closest('.card-header');
 
-        // If the title text itself (or the checkmark) is clicked, handle "check all"
+        // Text-to-speech
+        if (phraseSpan) {
+            app.handleSpeakWord(phraseSpan.textContent, event);
+            return;
+        }
+
+        // Insert/Delete Row Buttons
+        if (actionButton) {
+            const taskId = actionButton.closest('.task-row').dataset.taskId;
+            const action = actionButton.dataset.action;
+
+            if (action === 'insert-row') {
+                app.handleInsertRow(taskId);
+            } else if (action === 'delete-row') {
+                app.handleDeleteRow(taskId);
+            }
+            return; // Stop further processing
+        }
+
+        // Group Title Check-all
         if (groupTitle) {
             event.stopPropagation(); // Prevent the header click from firing
             app.handleGroupCheckAll(groupTitle);
             return; // Stop further processing
         }
 
-        // If the header area (but not the title text) is clicked, handle collapse/expand
+        // Section Collapse/Expand
         if (header) {
             const card = header.closest('.card');
-            const content = card.querySelector('.collapsible-content');
-            const chevron = header.querySelector('.chevron');
-
-            if (content && chevron) {
-                app.handleCollapseToggle(card);
-            }
+            app.handleCollapseToggle(card);
         }
     });
 

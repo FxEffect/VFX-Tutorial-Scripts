@@ -253,3 +253,13 @@
         .progress-tier-2 { background-color: #facc15; } /* yellow-400 */
         .progress-tier-3 { background-color: #3b82f6; } /* blue-500 */
         .progress-tier-4 { background-color: #22c55e; } /* green-500 */
+
+        /* Row Action Buttons Hover Effect */
+        .task-row .action-buttons {
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        .task-row:hover .action-buttons {
+            opacity: 1;
+        }

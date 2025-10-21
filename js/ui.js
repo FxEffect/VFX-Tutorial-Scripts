@@ -404,7 +404,8 @@ function createTableElement(tasks) {
                 <th class="w-1/12">时间轴</th>
                 <th class="w-3/12">画面内容</th>
                 <th class="w-3/12">旁白/对话</th>
-                <th class="w-4/12">备注</th>
+                <th class="w-3/12">备注</th>
+                <th class="w-1/12 text-center">操作</th>
             </tr>
         </thead>
     `;
@@ -454,12 +455,26 @@ function createTaskRowElement(task) {
     notesCell.innerHTML = markdownToHtml(task.notes); // Convert MD to HTML on render
     notesCell.dataset.property = 'notes';
 
+    const actionCell = document.createElement('td');
+    actionCell.className = 'text-center';
+    actionCell.innerHTML = `
+        <div class="action-buttons flex justify-center items-center space-x-2">
+            <button class="action-btn" data-action="insert-row" title="向下插入一行">
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V4a1 1 0 0 1 1-1Z" /></svg>
+            </button>
+            <button class="action-btn delete" data-action="delete-row" title="删除当前行">
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5 10a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z" /></svg>
+            </button>
+        </div>
+    `;
+
     tr.appendChild(videoCell);
     tr.appendChild(audioCell);
     tr.appendChild(timestampCell);
     tr.appendChild(contentCell);
     tr.appendChild(dialogueCell);
     tr.appendChild(notesCell);
+    tr.appendChild(actionCell);
     
     return tr;
 }
