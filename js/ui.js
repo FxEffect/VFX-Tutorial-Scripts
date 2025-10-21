@@ -373,7 +373,10 @@ function createSectionElement(section) {
     content.className = 'collapsible-content';
 
     if (section.tasks && section.tasks.length > 0) {
-        content.appendChild(createTableElement(section.tasks));
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'p-6'; // Add padding here
+        tableContainer.appendChild(createTableElement(section.tasks));
+        content.appendChild(tableContainer);
     }
 
     if (section.chapters && section.chapters.length > 0) {
