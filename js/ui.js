@@ -22,6 +22,17 @@ const editIdVersion = document.getElementById('edit-id-version');
 const infoDuration = document.getElementById('info-duration');
 const infoExportDate = document.getElementById('info-export-date');
 
+// Maps markdown header text to internal script object property names.
+const HEADER_TO_PROPERTY_MAP = {
+    '录视频': 'video',
+    '配音': 'audio',
+    '时间轴': 'timestamp',
+    '画面内容': 'content',
+    '旁白/对话': 'dialogue',
+    '备注': 'notes',
+    '视觉引导/备注': 'notes', // Both map to 'notes'
+};
+
 
 // --- Public Functions ---
 
@@ -375,7 +386,7 @@ function createSectionElement(section) {
     if (section.tasks && section.tasks.length > 0) {
         const tableContainer = document.createElement('div');
         tableContainer.className = 'p-6'; // Add padding here
-        tableContainer.appendChild(createTableElement(section.tasks));
+        tableContainer.appendChild(createTableElement(section.tasks, section.header));
         content.appendChild(tableContainer);
     }
 
@@ -384,8 +395,8 @@ function createSectionElement(section) {
             const chapterDiv = document.createElement('div');
             chapterDiv.className = 'px-6 pb-6 border-b border-gray-200';
             chapterDiv.dataset.groupContainer = '';
-    chapterDiv.innerHTML = `<h3 class="text-xl font-semibold mt-6 mb-4 group-title"><span>${chapter.title}</span><span class="checkmark">✓</span></h3>`;
-            chapterDiv.appendChild(createTableElement(chapter.tasks));
+            chapterDiv.innerHTML = `<h3 class="text-xl font-semibold mt-6 mb-4 group-title"><span>${chapter.title}</span><span class="checkmark">✓</span></h3>`;
+            chapterDiv.appendChild(createTableElement(chapter.tasks, chapter.header));
             content.appendChild(chapterDiv);
         });
     }
@@ -395,28 +406,96 @@ function createSectionElement(section) {
     return card;
 }
 
-function createTableElement(tasks) {
+function createTableElement(tasks, header) {
+    const headerOrder = header || ['录视频', '配音', '时间轴', '画面内容', '旁白/对话', '备注'];
+    
     const tableWrapper = document.createElement('div');
     tableWrapper.className = 'overflow-x-auto border rounded-lg';
+    
     const table = document.createElement('table');
-    table.innerHTML = `
-        <thead class="text-sm text-gray-700 uppercase">
-            <tr>
-                <th class="w-1/12 text-center">录视频</th>
-                <th class="w-1/12 text-center">配音</th>
-                <th class="w-1/12">时间轴</th>
-                <th class="w-3/12">画面内容</th>
-                <th class="w-3/12">旁白/对话</th>
-                <th class="w-3/12">备注</th>
-                <th class="w-1/12 text-center">操作</th>
-            </tr>
-        </thead>
-    `;
+    const thead = document.createElement('thead');
+    thead.className = 'text-sm text-gray-700 uppercase';
+    
+    const headerRow = document.createElement('tr');
+    
+    // Dynamically create header cells
+    headerOrder.forEach(headerText => {
+        const th = document.createElement('th');
+        th.textContent = headerText;
+        // Add some basic styling hints based on content
+        if (headerText.includes('录视频') || headerText.includes('配音')) {
+            th.className = 'w-1/12 text-center';
+        } else if (headerText.includes('时间轴')) {
+            th.className = 'w-1/12';
+        } else {
+            th.className = 'w-3/12';
+        }
+        headerRow.appendChild(th);
+    });
+
+    // Add the UI-only "Actions" header
+    const actionTh = document.createElement('th');
+    actionTh.textContent = '操作';
+    actionTh.className = 'w-1/12 text-center';
+    headerRow.appendChild(actionTh);
+    
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
     const tbody = document.createElement('tbody');
     tbody.className = 'text-gray-700';
 
     tasks.forEach(task => {
-        tbody.appendChild(createTaskRowElement(task));
+        const tr = document.createElement('tr');
+        tr.className = 'task-row';
+        tr.dataset.taskId = task.id;
+
+        // Dynamically create data cells based on header order
+        headerOrder.forEach(headerText => {
+            const propName = HEADER_TO_PROPERTY_MAP[headerText];
+            const td = document.createElement('td');
+
+            switch (propName) {
+                case 'video':
+                    td.className = 'text-center';
+                    td.innerHTML = `<input type="checkbox" class="task-checkbox" data-task-type="video" ${task.video ? 'checked' : ''}>`;
+                    break;
+                case 'audio':
+                    td.className = 'text-center';
+                    td.innerHTML = `<input type="checkbox" class="task-checkbox" data-task-type="audio" ${task.audio ? 'checked' : ''}>`;
+                    break;
+                case 'timestamp':
+                case 'content':
+                case 'dialogue':
+                case 'notes':
+                    td.className = 'editable';
+                    td.dataset.property = propName;
+                    // Use markdownToHtml to render content that might have markdown
+                    td.innerHTML = markdownToHtml(task[propName] || '');
+                    break;
+                default:
+                    // For unknown columns, just display the text content
+                    td.textContent = task[propName] || '';
+            }
+            tr.appendChild(td);
+        });
+
+        // Add the UI-only "Actions" cell
+        const actionCell = document.createElement('td');
+        actionCell.className = 'text-center';
+        actionCell.innerHTML = `
+            <div class="action-buttons flex justify-center items-center space-x-2">
+                <button class="action-btn" data-action="insert-row" title="向下插入一行">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V4a1 1 0 0 1 1-1Z" /></svg>
+                </button>
+                <button class="action-btn delete" data-action="delete-row" title="删除当前行">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5 10a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z" /></svg>
+                </button>
+            </div>
+        `;
+        tr.appendChild(actionCell);
+
+        tbody.appendChild(tr);
     });
 
     table.appendChild(tbody);
@@ -424,63 +503,6 @@ function createTableElement(tasks) {
     return tableWrapper;
 }
 
-function createTaskRowElement(task) {
-    const tr = document.createElement('tr');
-    tr.className = 'task-row';
-    tr.dataset.taskId = task.id;
-
-    // Create cells using DOM methods for security and clarity
-    const videoCell = document.createElement('td');
-    videoCell.className = 'text-center';
-    videoCell.innerHTML = `<input type="checkbox" class="task-checkbox" data-task-type="video" ${task.video ? 'checked' : ''}>`;
-
-    const audioCell = document.createElement('td');
-    audioCell.className = 'text-center';
-    audioCell.innerHTML = `<input type="checkbox" class="task-checkbox" data-task-type="audio" ${task.audio ? 'checked' : ''}>`;
-
-    const timestampCell = document.createElement('td');
-    timestampCell.className = 'editable';
-    timestampCell.textContent = task.timestamp;
-    timestampCell.dataset.property = 'timestamp';
-
-    const contentCell = document.createElement('td');
-    contentCell.className = 'editable';
-    contentCell.innerHTML = markdownToHtml(task.content); // Convert MD to HTML on render
-    contentCell.dataset.property = 'content';
-
-    const dialogueCell = document.createElement('td');
-    dialogueCell.className = 'editable';
-    dialogueCell.innerHTML = markdownToHtml(task.dialogue); // Convert MD to HTML on render
-    dialogueCell.dataset.property = 'dialogue';
-
-    const notesCell = document.createElement('td');
-    notesCell.className = 'editable';
-    notesCell.innerHTML = markdownToHtml(task.notes); // Convert MD to HTML on render
-    notesCell.dataset.property = 'notes';
-
-    const actionCell = document.createElement('td');
-    actionCell.className = 'text-center';
-    actionCell.innerHTML = `
-        <div class="action-buttons flex justify-center items-center space-x-2">
-            <button class="action-btn" data-action="insert-row" title="向下插入一行">
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V4a1 1 0 0 1 1-1Z" /></svg>
-            </button>
-            <button class="action-btn delete" data-action="delete-row" title="删除当前行">
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5 10a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z" /></svg>
-            </button>
-        </div>
-    `;
-
-    tr.appendChild(videoCell);
-    tr.appendChild(audioCell);
-    tr.appendChild(timestampCell);
-    tr.appendChild(contentCell);
-    tr.appendChild(dialogueCell);
-    tr.appendChild(notesCell);
-    tr.appendChild(actionCell);
-    
-    return tr;
-}
 
 // --- Private Helper Functions ---
 
