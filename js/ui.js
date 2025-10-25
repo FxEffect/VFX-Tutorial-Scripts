@@ -307,10 +307,11 @@ export function makeCellEditable(cell, onSave) {
     textarea.style.height = textarea.scrollHeight + 'px';
 
     const saveEdit = () => {
-        const newHtml = markdownToHtml(textarea.value);
+        const newMarkdown = textarea.value;
+        const newHtml = markdownToHtml(newMarkdown);
         // Apply formatting after saving
         cell.innerHTML = formatCellContent(newHtml);
-        onSave(newHtml);
+        onSave(newMarkdown);
     };
 
     const cancelEdit = () => {
