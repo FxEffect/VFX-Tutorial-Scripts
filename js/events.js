@@ -93,10 +93,21 @@ export function initializeEventListeners(app) {
 
     // Listener for all clicks within the script content area
     scriptTablesContainer.addEventListener('click', (event) => {
+        const scriptLink = event.target.closest('.script-link');
         const phraseSpan = event.target.closest('.tts-phrase');
         const actionButton = event.target.closest('.action-btn');
         const groupTitle = event.target.closest('.group-title');
         const header = event.target.closest('.card-header');
+
+        // Internal script link
+        if (scriptLink) {
+            event.preventDefault();
+            const scriptId = scriptLink.dataset.scriptLink;
+            if (scriptId) {
+                app.handleScriptSelect(scriptId);
+            }
+            return;
+        }
 
         // Text-to-speech
         if (phraseSpan) {

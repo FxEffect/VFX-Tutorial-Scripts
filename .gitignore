@@ -16,7 +16,7 @@ notes.txt
 视频脚本：10分钟从零制作一个火焰命中特效v2.html
 
 # 忽略脚本规范文档，因为它可能包含个人设计思路
-SCRIPT_MARKDOWN_GUIDE.md
+# SCRIPT_MARKDOWN_GUIDE.md
 
 # 忽略存放所有视频脚本的源文件目录
 manuscripts/

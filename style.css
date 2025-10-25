@@ -263,3 +263,14 @@
         .task-row:hover .action-buttons {
             opacity: 1;
         }
+
+        /* Internal Script Link Styles */
+        .script-link {
+            color: #2563eb; /* blue-600 */
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .script-link:hover {
+            text-decoration: underline;
+        }

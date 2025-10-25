@@ -547,7 +547,10 @@ function formatCellContent(html) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
 
-    // 1. Highlight keyword tags
+    // 1. Convert script links: [#script-id] -> <a href="#" data-script-link="script-id">#script-id</a>
+    tempDiv.innerHTML = tempDiv.innerHTML.replace(/\[#([\w-]+)\]/g, '<a href="#" class="script-link" data-script-link="$1">#$1</a>');
+
+    // 2. Highlight keyword tags
     const tagClasses = {
         '画面': 'tag-huamian', '操作': 'tag-caozuo', '讲解': 'tag-jiangjie', '讲解与操作': 'tag-jiangjie',
         '视觉引导': 'tag-shijue', '快节奏混剪': 'tag-huamian', '画面淡入': 'tag-huamian',
